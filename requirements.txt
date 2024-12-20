@@ -1,2 +1,13 @@
 streamlit
-openai
+groq
+langchain
+langchain-community 
+langchain-pinecone
+pinecone-client
+unstructured
+unstructured_inference
+sentence-transformers
+docx2txt
+openpyxl
+onnx==1.16.1
+pi-heif
