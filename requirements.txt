@@ -3,7 +3,7 @@ groq
 # langchain
 # langchain-community 
 # langchain-pinecone
-# pinecone[grpc]
+pinecone[grpc]
 # unstructured
 # unstructured_inference
 sentence-transformers
