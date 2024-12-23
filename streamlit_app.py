@@ -1,7 +1,6 @@
 import torch
 import sentence_transformers
 import os
-import dotenv
 import groq
 from pinecone.grpc import PineconeGRPC as Pinecone
 # from langchain.document_loaders import PyPDFLoader, UnstructuredExcelLoader, Docx2txtLoader
