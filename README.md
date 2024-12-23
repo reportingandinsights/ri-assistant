@@ -4,7 +4,7 @@
 
 ❓Other chatbots (like 🤖 ChatGPT) are not able to give assistance about Saddleback-specific questions such as how we say our scrum status, details on report standards and guidelines, or information on the data dictionary.
 
-❗This is where **RIA** (**R**&**I** **A**ssistant) comes in - armed with knowledge about Saddleback-specific standards, designs, and Github code, RIA provides volunteers and interns with support, guidance, and answers for common tasks and problems.
+❗This is where **RIA** (*R*&*I* *A*ssistant) comes in - armed with knowledge about Saddleback-specific standards, designs, and Github code, RIA provides volunteers and interns with support, guidance, and answers for common tasks and problems.
 
 ## How to use RIA?
 

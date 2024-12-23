@@ -1,8 +1,8 @@
 torch
 groq
-# langchain
-# langchain-community 
-# langchain-pinecone
+langchain
+langchain-community 
+langchain-pinecone
 pinecone[grpc]
 # unstructured
 # unstructured_inference
@@ -11,4 +11,5 @@ sentence-transformers
 # openpyxl
 # onnx==1.16.1
 # pi-heif
+time
 streamlit
