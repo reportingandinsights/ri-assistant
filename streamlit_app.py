@@ -1,12 +1,14 @@
-# from langchain.document_loaders import PyPDFLoader, UnstructuredExcelLoader, Docx2txtLoader
-# from langchain_community.document_loaders import UnstructuredImageLoader, GithubFileLoader
-# from langchain_community.embeddings import HuggingFaceEmbeddings
-# from langchain.schema import Document
+from langchain_community.document_loaders import UnstructuredImageLoader, GithubFileLoader, PyPDFLoader, UnstructuredExcelLoader, UnstructuredMarkdownLoader, Docx2txtLoader
+from langchain_community.document_loaders.csv_loader import CSVLoader
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain.schema import Document
+from langchain_pinecone import PineconeVectorStore
 import sentence_transformers
 from pinecone.grpc import PineconeGRPC as Pinecone
 import os
 import groq
 import streamlit as st
+import time
 
 
 ### Initializing APIs, Groq system prompt, and response streaming ###
@@ -17,9 +19,10 @@ pinecone_index = pinecone_client.Index("ri-assist")
 pinecone_namespace = ""
 
 system_prompt = f'''
-SYSTEM PROMPT: You are a confident expert at understanding and explaining business technology and development to interns and volunteers. Let's take this step-by-step:
+SYSTEM PROMPT: You are an expert at understanding and explaining business technology and Power BI development to interns. Let's take this step-by-step:
 First, answer any questions based on the data provided and always consider the context of the question, providing the most accurate and relevant information when forming a response.
 Second, if unsure of anything, mention it in the response and provide a web search suggestion or other documents for further research. 
+Thirdly, use emojis sparingly to highlight key points.
 Finally, cite your sources using bullet-points below your response only.'''
 
 def parse_groq_stream(stream):
@@ -30,15 +33,126 @@ def parse_groq_stream(stream):
                 yield chunk.choices[0].delta.content
 
 
+### RAG Document Loading to Pinecone ###
+
+def rag_documents() -> None:
+    ''' loads documents and uploads them to the pinecone database '''
+
+    with st.sidebar:
+        with st.spinner("Updating documents..."):
+            directory_path = "./r&i_assistant_docs"
+            embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
+            vectorstore = PineconeVectorStore(index_name="ri-assist", embedding=embeddings)
+
+            dir_doc_ids, dir_docs = _process_directory(directory_path)
+            github_ids, github_documents = _process_github()
+
+            vectorstore.add_documents(documents=dir_docs, ids=dir_doc_ids)
+            vectorstore.add_documents(documents=github_documents, ids=github_ids)
+        success = st.success("Documents updated successfully!")
+        time.sleep(2.5)
+        success.empty()
+
+# from sys import getsizeof
+# too_big = []
+# for text in df['text'].tolist():
+#     if getsizeof(text) > 5000:
+#         too_big.append((text, getsizeof(text)))
+# print(f"{len(too_big)} / {len(df)} records are too big")
+
+def _process_directory(directory_path) -> tuple:
+    ''' resursively processes all files in a directory returns a tuple of ids and data '''
+    ids = []
+    data = []
+
+    for root, _, files in os.walk(directory_path):
+        for file in files:
+            file_path = os.path.join(root, file)
+            
+            loader = None
+            if file.endswith(".pdf"):
+                loader = PyPDFLoader(file_path)
+                built_dir_doc = _build_directory_document(file_path, loader)
+                ids.append(built_dir_doc.id)
+                data.append(built_dir_doc)
+            elif file.endswith(".docx"):
+                loader = Docx2txtLoader(file_path)
+                built_dir_doc = _build_directory_document(file_path, loader)
+                ids.append(built_dir_doc.id)
+                data.append(built_dir_doc)
+            elif file.endswith(".xlsx"):
+                loader = UnstructuredExcelLoader(file_path)
+                built_dir_doc = _build_directory_document(file_path, loader)
+                ids.append(built_dir_doc.id)
+                data.append(built_dir_doc)
+            elif file.endswith(".csv"):
+                loader = CSVLoader(file_path)
+                built_dir_doc = _build_directory_document(file_path, loader)
+                ids.append(built_dir_doc.id)
+                data.append(built_dir_doc)
+            elif file.endswith(".md"):
+                loader = UnstructuredMarkdownLoader(file_path)
+                built_dir_doc = _build_directory_document(file_path, loader)
+                ids.append(built_dir_doc.id)
+                data.append(built_dir_doc)
+            # elif files.endswith(".png"):
+            #   loader = UnstructuredImageLoader(file_path)
+
+            print('uploading:', file_path)
+
+    return (ids, data)
+    
+def _process_github() -> tuple:
+    ''' creates Documents for all files in reportingandinsights common-code github repo, returns a tuple of ids and data '''
+    ids = []
+    data = []
+
+    loader = GithubFileLoader(
+        repo="reportingandinsights/common-code",
+        branch="main",
+        access_token=os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN"),
+        file_filter=lambda file_path: file_path.endswith(".md") or file_path.endswith(".txt") or file_path.endswith(".xml"),
+    )
+    
+    for gitdoc in loader.load():
+        built_gitdoc = _build_github_doc("https://github.com/reportingandinsights/common-code/", gitdoc)
+        ids.append(built_gitdoc.id)
+        data.append(built_gitdoc)
+
+        print('uploading:', gitdoc.metadata['path'])
+
+    return (ids, data)
+
+def _build_directory_document(file_path: str, loader: object) -> Document:
+    ''' create a Document object with id, metadata, and page content '''
+    return Document(
+        id=file_path,
+        metadata={
+            "source": file_path
+        },
+        page_content=f"Source: {file_path}\n{loader.load()[0].page_content}"
+    )
+
+def _build_github_doc(repo_name: str, gitdoc: list) -> Document:
+    ''' create a Document object with id, metadata, and page content. github loader loads all documents so requires a different function '''
+    return Document(
+        id=f"{repo_name}{gitdoc.metadata['path']}",
+        metadata={
+            "source": f"{repo_name}{gitdoc.metadata['path']}"
+        },
+        page_content=f"Source: {repo_name}{gitdoc.metadata['path']}\n{[gitdoc][0].page_content}" # convert the doc to a 1-element list to access the page_content
+    )
+
+
 ### Streamlit App ###
 
-st.title("💬 R&I Intern & Volunteer Chatbot")
+st.title("💬 R&I Assistant (RIA) Chatbot")
 
 # Create a session state variable to store the chat messages. This ensures that the messages persist across reruns.
 if "messages" not in st.session_state:
     st.session_state.messages = [
         {"role": "assistant", "content": system_prompt}, 
-        {"role": "assistant", "content": "Hello! I'm here to help you with any questions. Feel free to ask me anything!"},
+        {"role": "assistant", "content": ":wave: Hi I'm RIA! I'm here to help you with any questions. Feel free to ask me anything!"},
     ]
 
 # if "augmented_queries" not in st.session_state:
@@ -67,11 +181,12 @@ if query := st.chat_input("How can I help?"):
     # st.session_state.augmented_queries.append({"role": "user", "content": augmented_query})
 
     # embed the prompt, query the pinecone database, and create a llm query that contains the context
-    query_embed = sentence_transformers.SentenceTransformer("sentence-transformers/all-mpnet-base-v2").encode(query)
-    pinecone_matches = pinecone_index.query(vector=query_embed.tolist(), top_k=5, include_metadata=True, namespace=pinecone_namespace)
-    contexts = [match['metadata']['text'] for match in pinecone_matches['matches']]
-    augmented_query = "<CONTEXT>\n" + "\n-------\n".join(contexts[:10]) + "\n-------\n</CONTEXT>\n\nMY QUESTION:\n" + query
-    
+    with st.spinner("Thinking..."):
+        query_embed = sentence_transformers.SentenceTransformer("sentence-transformers/all-mpnet-base-v2").encode(query)
+        pinecone_matches = pinecone_index.query(vector=query_embed.tolist(), top_k=5, include_metadata=True, namespace=pinecone_namespace)
+        contexts = [match['metadata']['text'] for match in pinecone_matches['matches']]
+        augmented_query = "<CONTEXT>\n" + "\n-------\n".join(contexts[:10]) + "\n-------\n</CONTEXT>\n\nMY QUESTION:\n" + query
+        
     # Generate a response.
     stream = groq_client.chat.completions.create(
         model="llama-3.1-70b-versatile",
@@ -91,3 +206,7 @@ if query := st.chat_input("How can I help?"):
     with st.chat_message("assistant"):
         response = st.write_stream(parse_groq_stream(stream))
     st.session_state.messages.append({"role": "assistant", "content": response})
+    
+with st.sidebar:
+    st.button("Update documents", on_click=lambda: rag_documents())
+    st.button("Clear chat", on_click=lambda: st.session_state.pop("messages", None))
