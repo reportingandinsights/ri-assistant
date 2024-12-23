@@ -1,0 +1,564 @@
+Source/Table Type,Workspace Name,Dataflow Name (Source Name),Table Name (Entity Name),Owner (Bus/Dev),Last Model / Catalog Update,Table/Entity Description,Table/Entity Grain,Dependencies
+Custom Tables,(DATA) HC Data Warehouse,Metrics,Metrics VenueAttendanceMultiplier,Ron Brown,9/27/2024,"Table is used to store Multiplier rows by VenueID, CampusID, MultiplierCategory and Multiiplier. A multiplier can be updated by adding a Multiplier or changing A Multiplier.  This is done in the back-end",,"people PersonEngagement', 'custom DimPerson', 'custom Person_Spouse'"
+Custom Tables,(DATA) HC Data Warehouse,Metrics,Metrics vwFactMetricsOnlineAttendance,Ron Brown,9/27/2024,"Mirrors Metrics.FactTrendMetrics table with added VenueID, MultiplierCategory & Multiplier.  Other columns not related to attendance (Decisions, Baptisms...) are not in this view.","
+ • VenueID - VenuID from Shared DimVenue
+ •  MultiplierCategory - From Metrics VenueAttendanceMultiplier table 
+ •  Multiplier - Percentage used to multiply attendance count
+",People PersonEngagement
+Custom Tables,(DATA) HC Production,Custom Forms Transition,FormCard_Response_Summary,Kirk,9/25/2024,"• This table combines the response card and form data into one at the question/answer level.  It is recommended to use the custom columns data where possible as these have been cleaned up per the manual override process (based on excel spreadheets).
+Indicator Codes:
+""Source_Ind"": 1 = Response Cards, 2 = Forms Answer, 3 = Forms Personal Info
+""Custom_Exclude_Flag"": 0 = include, 1 = exclude
+• The ""Custom_CountCategory"" column includes the count category and should be used for all standard form reponse counts.  This field takes into account current staff exclusion for Accepted Christ, Baptized, and First Time by not including the count category name if the count came from a current staff member.","• Each row represents a single question and answer filled out on the response card/form.
+*This table must be used in conjunction with the ""FormCard_Entry_Summary"" table since entry level filters are only applied there.",N/A
+Custom Tables,(DATA) HC Data Warehouse,Shared,Shared DimSubVenue ,,9/17/2024,Table containing metadata for different SubVenues as created in HC,,"'custom DimPerson', 'custom Person_Spouse'"
+Custom Tables,(DATA) HC Data Warehouse,Custom DWH Tables,custom Relationship_ChildParent,Kirk/Ron,6/11/2024,"• Total_Parent_Married_Status - If any parent is married then the child is counted in married
+else if any parent is single, divorced, or widowed the child is counted as single
+else child is counted as unknown",• One row per person,XT_MAPP_Custom_message_name
+Custom Tables,(DATA) HC Data Warehouse,Ministry,Ministry DimServingOpportunityVolunteerCheckIn,,6/7/2024,This table contains all serving opportunity check in data (person who checked in) as well as the related event data,Each row represents a volunteer checking into to a serving opportunity,
+Custom Tables,(DATA) HC Data Warehouse,Custom DWH Tables,custom DimPerson,Kirk/Ron,6/5/2024,"Standard people DimPerson table with the addition of the HC_Campus column and the FirstGivingDate.  This was done to remedy the change in the people DimPerson structure where campus id changed from HC campus ID to DWH campus ID.
+First giving date includes all givings sources captured by the DWH and includes any ""Payment"" type transaction.
+
+• HouseholdFirstGivingDate - First giving date of husband, wife or unmaried person
+• HouseholdLastGivingDate - Last giving date of husband, wife or unmaried person
+","Each row represents a single person in the datawarehouse.
+*Data Quality Note: An individual human could have multiple person records.
+",
+Custom Tables,(DATA) HC Data Warehouse,Metrics,Metrics FactTrendMetrics,Jeremiah/Ron Brown,11/19/2024,"• a table containing various counts (Attendance, Baptism, Decisions). This table has a related Stored Procedure that populates the data in the Ministry App with Bill Armstrong's team.
+• There are multiple columns for Decisions by Milestone. DecisionsByMilestone.Basecount is the raw count. DecisionsByMilestone.ExclusionCount is a counter for food pantry Decisions. Only use the one for DecisionsByMilestone.FinalCount
+• Lake Forest Mandarin community attendance is added to Lake Forest campus. So Mandarin rowsattendanceCount values are 0
+BAPTISMS & DECISIONS.
+• Baptisms after 2022 are based on person milestones and data entry prior
+• Decisions are based on person milestones
+• Lake Forest Mandarin Community has baptism and decision counts listed
+","""• one row per MetricDateKey per MetricTimeKey per CampusID per age group (age only applies to attendance and baptisms) attendance ranges from 2015–present
+ • Decisions are always listed as DemographicID = 1 because age of decision date is not captured
+ SERVICEWEEK
+ • also contains ServiceWeek, ServiceMonth, ServiceYear for aggregation
+ • Attendance is Sat 4pm – Sat 3:59pm (date and time)
+ • Decisions and Baptisms are Sat–Fri (date only)""
+ • Baptism counts are rolled up to the campus where the baptism occurred, not the campus where a person attends.", The DecisionsBy ConnectionCardCount column has been hidden from the DF since this is not the correct/full logic for decisions.  Instead this count should be based on the Forms Dataflow.
+Custom Tables,(DATA) HC Data Warehouse,Events,Events WorshipServiceCategoryServiceWeekMap,,5/31/2024,"For Worship Service Categories where the service week is customized (assinged to a specific date outside of the normal weekend rules), the custom assigned service week is here.",,
+Custom Tables,(DATA) HC Production,Ministry,public ministry_church_entity,Jeremiah/Healthy Church,5/10/2024,"there are general ministries and local (per-campus) ministries. In HC, when a general ministry is inactive, all related local ministries are also changed to inactive",one row per ministry per campus,
+Custom Tables,(DATA) HC Data Warehouse,Ministry,Ministry DimMinistryLocation,Jeremiah/Chris Dennis,5/10/2024,"• Table containing metadata for ministry locations. A ministry location is a parent ministry represented at a specific location or campus. i.e., Daniel Plan - San diego
+• there are general ministries and local (per-campus) ministries. In HC, when a general ministry is inactive, all related local ministries are also changed to inactive",one row per ministry per campus,
+Custom Tables,(DATA) HC Data Warehouse,Ministry,Summary vwMinistryLocationDetail,Jeremiah/Chris Dennis,5/10/2024,"• minsitry location data with staff connector. The table's use case is when a Staff Connector slicer is needed for the user
+• there are general ministries and local (per-campus) ministries. In HC, when a general ministry is inactive, all related local ministries are also changed to inactive",one row per ministry per campus,
+Custom Tables,(DATA) HC Production,Data Capture,public view_data_capture_existing_fact,Kirk/Kirk,5/6/2024,"• Contains HC attendance/baptisms/salvation data exactly as it is in HC
+•  this table has the create date and time (UTC time zone) of each data entry to the HC data capture module. ",one row per data capture entry (this can be attendance/baptisms/salvations),
+Custom Tables,(DATA) 3rd Party,JeremiahC_GoogleAnalytics_GA4,extracted Medium data (legacy),Jeremiah,4/25/2024,"• (legacy) means it is for the old saddleback.com
+• this table is currently sample data stored in an Excel workbook on Sharepoint/Teams. 
+• The Sample data is generated by a local .pbix file. This file is sourced from the GA4 dataflows in (DATA) Dev Sandbox Workspace","• one row per date per URL. 
+• the URL is for computer and mobile devices. the exact name is ""unifiedPagePathScreen""",
+Custom Tables,(DATA) 3rd Party,JeremiahC_GoogleAnalytics_GA4,extracted Metrics data (legacy),Jeremiah,4/25/2024,"• (legacy) means it is for the old saddleback.com
+• this table is currently sample data stored in an Excel workbook on Sharepoint/Teams. 
+• The Sample data is generated by a local .pbix file. This file is sourced from the GA4 dataflows in (DATA) Dev Sandbox Workspace","• one row per date per URL. 
+• the URL is for computer and mobile devices. the exact name is ""unifiedPagePathScreen""",
+Custom Tables,(DATA) 3rd Party,JeremiahC_GoogleAnalytics_GA4,extracted Medium data (skinny),Jeremiah,4/25/2024,"• (skinny) means it is for the new welcome.saddleback.com
+• this table is currently sample data stored in an Excel workbook on Sharepoint/Teams. 
+• The Sample data is generated by a local .pbix file. This file is sourced from the GA4 dataflows in (DATA) Dev Sandbox Workspace","• one row per date per URL. 
+• the URL is for computer and mobile devices. the exact name is ""unifiedPagePathScreen""",
+Custom Tables,(DATA) 3rd Party,JeremiahC_GoogleAnalytics_GA4,extracted Metrics data (skinny),Jeremiah,4/25/2024,"• (skinny) means it is for the new welcome.saddleback.com
+• this table is currently sample data stored in an Excel workbook on Sharepoint/Teams. 
+• The Sample data is generated by a local .pbix file. This file is sourced from the GA4 dataflows in (DATA) Dev Sandbox Workspace","• one row per date per URL. 
+• the URL is for computer and mobile devices. the exact name is ""unifiedPagePathScreen""",
+Custom Tables,(DATA) 3rd Party,JeremiahC_GoogleAnalytics_GA4,GA4_Metrics_perWeek [0-2 months],Jeremiah,4/25/2024,"• currently there is NO DATA due to limitations with the Power BI Google Analytics connector
+• it is for the new welcome.saddleback.com
+","• one row per date per URL. 
+• the URL is for computer and mobile devices. the exact name is ""unifiedPagePathScreen""",
+Custom Tables,(DATA) 3rd Party,JeremiahC_GoogleAnalytics_GA4,GA4_Session_SourceMedium [0-2 months],Jeremiah,4/25/2024,"• currently there is NO DATA due to limitations with the Power BI Google Analytics connector
+• it is for the new welcome.saddleback.com
+","• one row per date per URL. 
+• the URL is for computer and mobile devices. the exact name is ""unifiedPagePathScreen""",
+Custom Tables,(DATA) HC Production,Custom Small Group Tables,custom sg_age_group_dim,Kirk,3/29/2024,"• this is the age group dimension table for the custom small group table
+• one small group can have none or multiple age groups associated with it
+• this dimension describes the age groups that a particular small group is for
+• no filters applied to this table",• each row is a unique age group and small group combination,
+Custom Tables,(DATA) HC Production,Custom Small Group Tables,custom sg_demographic_dim,Kirk,3/29/2024,"• this is the demographic dimension table for the custom small group table
+• one small group can have none or multiple demographics associated with it
+• this dimension describes the demographic that a particular small group is for
+• no filters applied to this table",• each row is a unique demographic and small group combination,
+Custom Tables,(DATA) HC Production,Custom Small Group Tables,custom sg_lifestage_dim,Kirk,3/29/2024,"• this is the life stage dimension table for the custom small group table
+• one small group can have none or multiple life stages associated with it
+• this dimension describes the life stage that a particular small group is for
+• no filters applied to this table",• each row is a unique life stage and small group combination,
+Custom Tables,(DATA) HC Production,Custom Small Group Tables,custom sg_tag_dim,Kirk,3/29/2024,"• this is the tags dimension table for the custom small group table
+• one small group can have none or multiple tag associated with it
+• no filters applied to this table",• each row is a unique tag and small group combination,
+Custom Tables,(DATA) HC Production,Custom Small Group Tables,custom smallgroup_address,Kirk,3/29/2024,"• this table contains the small group meeting address information
+• no filters applied to this table
+• join to the custom small group table on Location_Id on both sides",• each row is a unique small group address record,
+Custom Tables,(DATA) HC Production,Custom Small Group Tables,custom smallgroup_contact_log,Kirk,3/29/2024,"• this table is the main contact log, see engagement listing, but for contact engagements only
+• main use is to identify group contacts, join to custom small group on recepient_smallgroup_id
+• base contact log table is not filtered, process to get recipient small group id only includes participants with an active status
+• use create_date as the date the contact was made, note that this is in UTC and thus may be slightly off from what is displayed on the groups app if used as is","• each row is a unique contact made by one individual to a small group individual, this is usually a host and thus related to that host's small group",
+Custom Tables,(DATA) HC Production,Custom Small Group Tables,custom smallgroup_participant,Kirk,3/29/2024,"• this table includes all individuals who are marked as participants in a group, this will include hosts and co-hosts as well as standard participants
+• no filtering has been applied to the base participants table","• each row is a unique group participant record, thus a unique individual and group combination",
+Custom Tables,(DATA) HC Production,Custom Small Group Tables,custom smallgroup_leadership,Kirk,3/29/2024,"• this table contains the list of all current leaders for a particular small group
+• this table only includes active and non-deleted leadership records (on the SG side not the person record side)
+• a maximum heiarchy depth of 6 levels is taken into account for this table which the SG team agreed was more than enough","• each row is a unique combination of individual and small group, with each representing a leadership position in relation to the small group",
+Custom Tables,(DATA) HC Production,Custom Small Group Tables,custom smallgroup,Kirk,3/29/2024,"• this table provides a single source for all core small group data
+• for the custom small groups table model this is the central fact table to use
+• please take note to apply filtering on the test groups and ministry not small group columns in addition to the deleted date column when using this table
+• no filtering has been applied to the base small groups table",• each row represents a single small group in the HC small groups system,
+Custom Tables,(DATA) Dev Sandbox,Google Analytics GA4,GA4_Metrics_perWeek,Jeremiah,3/29/2024,"• contains primary Google analytics metrics for Power BI report consumption. This includes: screenPageViews, screenPageViewsPerUser, Sessions, engagedSessions, activeUsers, newUsers, landingPage, unifiedPagePathScreen, userEngagementDuration (seconds), and platform
+• there is no data for Saddleback Berlin because of Europe GDPR data privacy","• one row per week
+• the week is formatted as the Year and the week's number of year. It starts on Sunday, ends on Saturday. For example. 1/1/23 was a Sunday and its number in this table is 20231",
+Custom Tables,(DATA) Dev Sandbox,Google Analytics GA4,GA4_Events_perWeek,Jeremiah,3/29/2024,"•  contains primary Google analytics metrics for Power BI reports about configured events: This includes: Sessions, engagedSessions, activeUsers, unifiedPagePathScreen, eventValue, eventName, customEvent:event_Category, customEvent:value
+• there is no data for Saddleback Berlin because of Europe GDPR data privacy","• one row per week
+• the week is formatted as the Year and the week's number of year. It starts on Sunday, ends on Saturday. For example. 1/1/23 was a Sunday and its number in this table is 20231",
+Custom Tables,(DATA) Dev Sandbox,Google Analytics GA4,GA4_Session_SourceMedium,Jeremiah,3/29/2024,"• table for analyzing the streams that contribute to site traffic
+• contains primary Google analytics metrics for Power BI report detailed analytics. This includes: Sessions, engagedSessions, activeUsers, , unifiedPagePathScreen, Source, Medium, operatingSystem, and platform
+• there is no data for Saddleback Berlin because of Europe GDPR data privacy","• one row per week
+• the week is formatted as the Year and the week's number of year. It starts on Sunday, ends on Saturday. For example. 1/1/23 was a Sunday and its number in this table is 20231",
+Custom Tables,(DATA) HC Data Warehouse,Small Groups,Integration SmallGroup,,3/28/2024,,"partial data, not a whole schema",
+Custom Tables,(DATA) HC Production,Ministry,public ministry,Jeremiah/Healthy Church,3/26/2024,,one row per ministry,
+Custom Tables,(DATA) HC Production,Ministry,public ministry_category,Jeremiah/Healthy Church,3/26/2024,"a ministry category is an aggregate of ministries. E.g. ""Children"" or ""Adult Studies, Trainings...""",one row per ministry category,
+Custom Tables,(DATA) HC Production,Ministry,public ministry_tag,Jeremiah/Healthy Church,3/26/2024,"• Table containing metadata for ministry tags
+• this table is possibly a subset of the tag table",one row per tag per ministry,
+Custom Tables,(DATA) HC Data Warehouse,Ministry,Ministry DimMinistry,Jeremiah/Chris Dennis,3/26/2024,Table containing metadata for ministries,one row per ministry,
+Custom Tables,(DATA) HC Data Warehouse,Ministry,Ministry DimMinistryMembers,Jeremiah/Chris Dennis,3/26/2024,"Table containing information about people who are in ministry rosters in any status. Each volunteer status is a column
+
+0 Not Contacted
+1 First Contact
+2 Second Contact
+3 Pending
+4 Ineligible
+5 Active
+6 Inactive
+7 In Training",one row per ministry per campus per person ID,
+Custom Tables,(DATA) HC Data Warehouse,Ministry,Ministry DimMinistryTag,Jeremiah/Chris Dennis,3/26/2024,Table containing metadata for ministry tags,one row per tag per ministry,
+Custom Tables,(DATA) HC Data Warehouse,Ministry,Summary MonthlyMinistryMetrics,Jeremiah/Chris Dennis,3/26/2024,Summary view of Ministry volunteers per campus per month per year. Table is only updated at the end of each month,one row per ministry per campus per month,
+Custom Tables,(DATA) HC Data Warehouse,Custom DWH Tables,custom RegionCampusRollup,Kirk,3/25/2024,"• This table is designed to provide a single place to get the region and campus level data rolled up when joining to either a DWH or HC campus id
+• Data is souced from two base tables, campus region junction which is labeled as Record_Type = rollup lvl and campus level data which is labeled as Record_Type = campus lvl
+• For rollup lvl data all campus region rollup records are displayed
+• For campus lvl data all campuses except the N/A campus is included.  
+*Becuase of this joining to the custom campus table and filtering based on exclusion is still required",• Each row represents a unique campus region combination or in the case of campus lvl data a unique campus,
+Custom Tables,(DATA) HC Production,Person,public person_occupation,,2/8/2024,• contains an important column called is_staff that indicates whether someone works at Saddleback Church,one row per person record's occupation,
+Custom Tables,(DATA) HC Production,Custom Forms Transition,FormCard_Entry_Summary,Kirk,1/26/2024,"• This table combines the response card and form data into one at the entry level.  In addition template level data from both systems is brought in as well as relevant event date, time, and campus information as available.
+• Indicator Codes:
+""Source_Ind"": 1 = Response Cards, 2 = Forms
+""Entry_Source_Ind"": 1 = Web/Mobile App, 2 = Physical Cards
+""Service_Flag"": 1 = Weekend Service, 0 = Other
+""Custom_TemplateType_Ind"": R = Response Card/worship service event, W = Welcome Card, U = Unknown, Reg = regular event type, Quiz = quiz event type, null = not a service
+*Custom_TemplateType_Ind, is based on custom catagorization for response cards.  For connection forms, the categorization is based on template type by default.  Worship service goes to ""R"", all ""W"" are overrides.
+*Standard filtering for weekend cards only is to include custom_templatetype_ind in {R,W}.
+• ""Custom Card Date"": this field represents the best calcualted/estimated date the card/form was filled out and submitted by the individual.  Simmilar to Entry date.  This table can also be joined to the ""FormCard_CustomServiceWeek"" table to allow rollup of cards to weekend.
+• ""Custom Weekend DateTime"": is the best calculated/estimated service date and time for the card/forms tied to a service where possible and if not to a specific weekend (Sunday) date.
+• ""Unique Counter ID"": can be used with the count distinct function to return deduplicated card/form counts based on report aggrigation.
+• Entry date (recommnded to use custom card date instead) is actually create date for response cards.
+* The ""Service_Flag"" field is based on the response card being related to a valid event which has the service flag attached to it.  Data profiling has indicated that some valid response cards may not have this relationship setup and thus do not get a ""Service_Flag ""=1.  Instead using the ""Custom_TemplateType_Ind"" in (R,W) has proven to be a better method to identify all service related response cards.  Please see the KPI document for more information.","• Each row represents a single response card/form filled out and submitted.
+*Test cards (from the Response Cards tables) and entries made by testers (from all tables) are removed from this table.
+• Form_EntryId is the HC Forms source ID and can be used to look up cards by URL. 
+the form template ID is also needed from table 'public connection_form_template'
+Example https://hc.saddleback.com/data-capture/connection-forms/339/entries/edit/52571",
+Custom Tables,(DATA) HC Production,Ministry,public serving_opportunity_tag,Jeremiah/Healthy Church,1/24/2024,Table containing id for serving opportunity tags. This cross references to the 'public tag' table,one row per tag per serving opportunity,
+Custom Tables,(DATA) HC Production,Shared,public tag,,1/24/2024,"Table containing metadata for all tags: ministry, serving opportunity, event, ",one row per tag,
+Custom Tables,(DATA) HC Data Warehouse,Custom DWH Tables,custom DemographicRollup,Jeremiah/Kirk,12/4/2023,"• This table was designed to be joined to the DimDemographics table on demographic id
+• The join will result in a many to many relationship
+• The rollup allows the use of the DemographicRollupName in slicers and filters to filter multiple demographics at once",This is a rollup table so table grain is demographic id and rollup name,
+Custom Tables,(DATA) HC Production,Custom Journey Tables,Journey_Journey,Kirk,11/15/2023,"• IsPublished_Current_Flag is 1 if the current date is between the published start and end date or end date is not set.  Start date must be set and prior to current date.
+• Deleted journeys are excluded",Each row represents one journey,
+Custom Tables,(DATA) HC Production,Custom Journey Tables,Journey_JourneyStep,Kirk,11/15/2023,"• All relivant step information is here along with the step grouping information
+• Journey steps can be sorted by JourneyStep_StepOrder and this should match the order with group and step hiarchy seen in HC
+• Deleted journey steps, step groups, and steps with deleted journey to step relationships are excluded
+• StepTitle_wSort and StepGroupTitle_FullName_wSort represent the sort order ###: Name Value.  These are meant to be used directly when requireing a sorted group or step",Each row is a unique step in a journey.  Records should be unique on JourneyStep_Id,
+Custom Tables,(DATA) HC Production,Custom Journey Tables,Journey_JourneyPerson,Kirk,11/15/2023,"• This table joins the person record to a journey that individual subscribed to
+• Deleted person jouney relationships are removed",Each row is a unique person journey combination.  Ie. one person taking ten journeys would be ten records here.,
+Custom Tables,(DATA) HC Production,Custom Journey Tables,Journey_JourneyPersonStep,Kirk,11/15/2023,"• This tables columns are the same as the Journey_JourneyStep table with the addition of columns related to when a person last completed or skipped a step
+• When a person subscribes to a journey all steps related to that journey will show up here
+• Deleted journey steps, step groups, and steps with deleted journey to step relationships and person journey steps completed are excluded
+• StepTitle_wSort and StepGroupTitle_FullName_wSort represent the sort order ###: Name Value.  These are meant to be used directly when requireing a sorted group or step",Each person journey step is a record here.  Ie. one person taking two journeys each with five steps would be ten records here regardless of how many steps they completed.,
+Custom Tables,(DATA) ME App,DeviceDateCampus_FactTables,DeviceDateCampus_FactUsage,Kirk,11/13/2023,"• This table contains unique devices per date and campus selected as well as flags for if particular actions/views were made during that date and campus time per device id
+• Device Id is what is currently the id being used to identify unique individuals (usu. count distinct on this column)
+• Only includes data for last 180 days","Each row is a unique device id, day, and campus (thus where one person accessed the app on a particular day and selected a particular campus)",
+Custom Tables,(DATA) ME App,DeviceDateCampus_FactTables,DeviceDateCampus_DimLocation,Kirk,11/13/2023,"• This table was designed to be a cross reference table allowing the  DeviceDateCampus_FactUsage and DeviceDateCampus_DimLocation tables to be joined
+• This table assits in the normalization of the location data, since one device id for one day and one campus may have been accessed at multiple locations
+• Only includes data for last 180 days",Each row is a unique combination of DeviceDateCampus_Key and LocationKey,
+Custom Tables,(DATA) ME App,DeviceDateCampus_FactTables,DeviceDateCampus_BridgeLocation,Kirk,11/13/2023,"• This table contains each unique location where a device accessed the ME App
+• Only includes data for last 180 days","Each row is a unique location (location key), where the combination of city, state, and country are unique",
+Custom Tables,(DATA) 3rd Party,Transistor Podcasts,TransistorEpisodeAnalytics,Jeremiah,11/13/2023,This table contains podcast episode download information aggregated (counted) for each day. The data source is Transistor. There is also a column called [RowKey] that contains the date value for each row,Each row represents one download count for each podcast episode. The episode id is in the column [PartitionKey],
+Custom Tables,(DATA) 3rd Party,Transistor Podcasts,TransistorEpisodes,Jeremiah,11/13/2023,"This table contains episode information for all Saddleback Church podcasts, which are hosted on Transistor. The standard episode information icludes, title, description, date, publishing status, keyword, etc.","Each row represents one podcast episode. If an episode is hosted on multiple podcast platforms, the table will produce only one row for the episode",
+Custom Tables,(DATA) 3rd Party,MAPP Prod,MAPP_Messages,Kirk/Robert Harmless,11/1/2023,"• MAPP email management email message level data.  All statistics at this level are updated for seven days and then become static.
+• Robert Harmless wrote some Azure Logic Apps and Function Apps with a little Data Factory to request the data and put it into Azure Table Storage. This daily pulls data from the MAPP API - requesting data from the past 7.
+• Azure storage account: sbstoragelrs1prod
+• church_entity_id will contain either the HC Campus ID or ""Other"" and is a custom calculation based on the campus name being contained in the ""included_groups"" column
+• church_entity_id, assumes that only one campus is included (only one will be choosen even if multiple are available).  It is manually updated in the code and thus when new campuses are added or campus names change the code needs to be changed as well.  Based on message name first then segment.
+• custom_message_name is an Excel file to correct typos in the message_name due to user error.",Each row represents one email message sent out (to groups of users).  The unique identifier is the RowKey.,
+Custom Tables,(DATA) HC Production,Ministry,public serving_opportunity_volunteer_check_in,Jeremiah/Healthy Church,10/24/2023,"• currently this serving opportunity volunteer check in data is not confirmed to hydrate into the corresponding data warehouse tables ""Events DimEventAttendeeCheckIn"" NOR ""Ministry ServingOpportunityOccurrenceCheckIn (name TBD)""",one row per serving opportunity per volunteer per sub venue id,
+Custom Tables,(DATA) HC Production,Custom Forms Transition,FormCard_CustomServiceWeek,Kirk,10/6/2023,"• This table contains dates with related customized weekend date ranges
+• In general the Sat goes forward to Sunday and Monday - Friday go back to the Sunday logic is used.  For special events weekends are modified, see notes.",• Each row represents one day,
+Custom Tables,(DATA) HC Production,Custom Forms Transition,FormCard_CustomQuestionClass,Kirk,10/6/2023,"• This table is based on hard coded question classification ID to NAME data in HC.
+• The grouping column is custom for reporting and was designed to allow filtering of the ""WE Connections Flash Report"" to standadard questions only.
+* It is important to note that this table was designed to allow slicing by grouping and thus is not unique on id.  To use the table for classification only filter grouping to ""All"" in power query.","• Each row is NOT unique on id (see description notes)
+• No primary key, filtering may be required when using this table to get the expected results.",
+Custom Tables,(DATA) HC Data Warehouse,Custom DWH Tables,custom Metrics ServiceWeeks,Jeremiah/Ron,10/3/2023,"• This table contains the service week and campus id combinations
+• the reporting team needs this table to call the function Get.ServiceWeek in order to provide the pre-calculated logic for ServiceWeeks",Each row represents a unique combination of service week and campus id,
+Custom Tables,(DATA) HC Data Warehouse,Custom DWH Tables,custom DimDate,Jeremiah/Ron,9/25/2023,"Standard dim date table with ""weekend"" columns added.  These columns provide the Weekend for service week. It starts on a Saturday and ends on the following Friday. The name of the service is the Sunday. For example, 11/5/22 is a Saturday and 11/6/22 is a Sunday. The Weekend with value 11/6/22 will extend from Saturday 11/5/22 to Friday 11/11/22.",Each row represents a single day,
+Custom Tables,(DATA) 3rd Party,MAPP Prod,MAPP_Links,Kirk/Robert Harmless,8/15/2023,"• MAPP email management, email message link(s) level data.  All statistics at this level are updated for seven days and then become static.
+• Robert Harmless wrote some Azure Logic Apps and Function Apps with a little Data Factory to request the data and put it into Azure Table Storage. This daily pulls data from the MAPP API - requesting data from the past 7.
+• Azure storage account: sbstoragelrs1prod",Each row represents one link on an email message.  The unique identifier is the RowKey and the PartitionKey matches to the MAPP_Messages.RowKey.,
+Custom Tables,(DATA) HC Production,Ministry,public ministry_member,Jeremiah/Healthy Church,8/14/2023,- the table does not update the leadership status of a ministry member if it changes,one row per per ministry per campus per person,
+Custom Tables,(DATA) HC Production,Person,public note,Kirk/Kirk,8/8/2023,This table contains the person note information and can be tied other tables that reference the note fields in Healthy Church.  This table is filtered so that sinsitive notes are NOT available here as they are usually not used for reporting.,Each row is a single person note entry.,
+Custom Tables,(DATA) HC Production,Contact,public contact_log,Kirk/Kirk,8/3/2023,This table contains the records of contacts made to individuals using the Healthy Church small group application/module.,Each row represents a single contact made to a specific person at a specifc time.,
+Custom Tables,(DATA) HC Production,Contact,lookups contact_log_method,Kirk/Kirk,8/3/2023,A lookup table for the 'public contact_log' table.  Contains the method of contact for the contact record.,Each row is a single contact method and status of that method.,
+Custom Tables,(DATA) HC Production,Contact,lookups contact_log_status,Kirk/Kirk,8/3/2023,A lookup table for the 'public contact_log' table.  Contains the status for the contact record.,Each row is a single contact status and status of that status.,
+Custom Tables,(DATA) Dev Sandbox,KirkY_SGHostEmail_MAPPDev,mappSubscribersHistory,Jeremiah/Kirk,7/26/2023,"• PartitionKey matches with MAPP_Messages RowKey
+• table contains data about subscriber bounces, opt outs, etc.",• one row per email subscriber per email. One user email can be subscribed tomultiple email content newsletters,
+Custom Tables,(DATA) HC Data Warehouse,Custom DWH_HC Tables,custom PersonLastEngagement,Kirk/Ron,7/20/2023,"• person ID for all individuals with the LastEngagmentDate based on the DWH person engagement table.  
+•ExclusionFlag = 1 when (Registered for a Light of the World and/or Grocery Distribution event OR person has food pantry note OR person has CR Baptism Form) AND individuals first and only contact with the church was LOTW or FP or CR Bapt. Form.
+- Using ExclusionFlag: This flag is use for improving the accuracy of the Active Attenders count by removing ExclusionFlag = 1
+• This table also contains food pantry salvation information.  The FP_SalvationFlag column = 1 if the person has a food pantry salvation note on their record.  The FPS_Note and FPS_NoteCreatedDate indicate the FIRST instance of food panry salavtion node with the actual note text as well as the note date.
+- Using FP_SalvationFlag: When counting Decisions do not count FP_SalvationFlag = 1. When counting person with certain touchpoints, include people with FP_SalvationFlag = 1
+• Replaced custom PersonlastEngagement that was in the custom DWH Tables dataflow.",Each row represents a person unique ID for all individuals who exist in the people dimPerson table,
+Custom Tables,(DATA) HC Production,Custom HC Tables,custom Person_Spouse,Kirk/Ron,7/11/2023,"• Each person with their corresponding spouse person unique id.  based on the HC table person_relationship.
+• Single individuals show a 99999999 for unique spouse id.
+• NOTE: person_relationship is a different data structure from person_relationship_status. But per Healthy Church team process, they update the relationship when there is a split e.g. Divorce",Each row represents one person in HC (unique_id column),
+Custom Tables,(DATA) HC Production,Custom HC Tables,custom Person_Household_Spouse,Kirk/Ron,7/11/2023,"• Each person with their corresponding custom created household key (households based on the HC table person_relationship.). 
+• This table is used a cross reference between 'custom Central_Household' and DimPerson
+• NOTE: person_relationship is a different data structure from person_relationship_status. But per Healthy Church team process, they update the relationship when there is a split e.g. Divorce
+• Past: Used to be ""reports View_Person_Household_Spouse""",Each row represents one person in HC.,
+Custom Tables,(DATA) HC Data Warehouse,Custom Touchpoint Addendum,PersonEngagement R&I Add Spouse,Kirk/Kirk,6/22/2023,"• This table is designed to be appended to the 'people PersonEngagement' table to create new engagement records for selected spouse touchpoints.
+• Included DW TouchpointID's: 4, 57, 60, 61, 83, 86. (which include children dedication, baptism and last giving)
+Touchpoints that meet the id criteria above and are tied to a person who has a spouse will be duplicated/created in this table with the spouse PersonID and UniquePersonID (all other column info is the same).",The grain for this table will replicate that of the 'people PersonEngagement' table.,
+Custom Tables,(DATA) HC Data Warehouse,Custom Touchpoint Addendum,DimTouchpoint R&I Add First Giving,Kirk/Kirk,6/22/2023,"This table is designed to be appended to the 'people DimTouchpoint' table to create a new record for the first giving date touchpoint.  This should be used in conjunction with the 'PersonEngagement R&I Add First Giving wSpouse' table.
+All data in this table has been manually entered.",This table follows the same grain as the 'people DimTouchpoint' table and only contains a single row.,
+Custom Tables,(DATA) HC Data Warehouse,Custom Touchpoint Addendum,PersonEngagement R&I Add First Giving wSpouse,Kirk/Kirk,6/22/2023,"• This table is designed to be appended to the 'people PersonEngagement' table to create new records for the first giving date touchpoint. (earliest First Giving date is 12/24/2016)  This should be used in conjunction with the 'DimTouchpoint R&I Add First Giving' table.
+• This table is based on the person's first giving date in the 'custom DimPerson' (referencing logic, not table directly).  For individuals who also have a spouse, an additional record (all same data except for person information) is created for the person's spouse.",Each row in this table relates to a single person (or their spouse) first giving date.  It is possible to have two first giving touchpoint records for the same person if both husband and wife have a first giving date (each gets duplicated for spouse).,
+Custom Tables,(DATA) HC Data Warehouse,Shared,Shared DimResponseCard,Kirk,6/16/2023,"This table can be used to identify the response card (template level) information, the main use for this is when joined with the person engagement table to get the response card name",Each row represents a unique response card (not entry but template) by ResponseCardID,
+Custom Tables,(DATA) HC Production,Connection Forms,public connection_form_template,,6/16/2023,"This table can be used to identify conneciton form template information, the main use for this is when joined with the person engagement table to get the connection form name",Each row represents a unique connection form template per the id,
+Custom Tables,(DATA) HC Production,Notifications,notification notification_recipient,Jeremiah,6/2/2023,"- column is_viewed is only populated for some rows from App source (3),
+- manual retry count column has no useful info","the medium by which a notification is received 
+0 = All; 1 = Email; 2 = Sms; 3 = App; 4 = Push;
+Status column
+0 = Unprocessed; 1 = Pending; 2 = Running; 3 = Succeeded; 4 = Failed; 5 = Skipped",
+Custom Tables,(DATA) Staffnet,Small Group Health Assessment,dbo Individuals_Assessments,Ron,5/31/2023,Individuals health assessment summary data for one assessment date/time.  Final scores for each of the five purposes.,Each row represents one assessment for a person at a particular time. The user may need to make the grain courser to one assessment per person per day,
+Custom Tables,(DATA) HC Production,Custom Serving Ops Tables,Serving Op Occurrences (Spots),Kirk/Kirk,4/27/2023,"This table contains a union of single and recurring serving opportunity occurrences for individuals who signed up to serve and were scheduled for specific days or ranges.  The records in this report should represent the person icon count of scheduled individuals on the serving ops calendar view.
+• Please note the following FILTERS: Only serving ops tied to a valid ministry and serving opportunity that were not deleted are included (filters applied on ministry and serving ops side but no filters have been applied to person records). 
+• Closed event occurrences are excluded from this report. 
+•Only one person should exist per serving spot/occurrence/slot, but there was a bug on signups that allowed a recurring and single serve signup for the same person in the same slot.  
+• To prevent counting twice, count distinct on the ""PersonOccurrence_Key"" to get unique filled spots.
+•DATE RANGE: This table only contains data for 365 days prior to current day and 365 days future from current date.
+• is a custom indicator added for the R&I team, to reflect the serving opportunity volunteers schedule setup; it is based on the serving_opportunity_volunteer_occurrence.occurrence_id column: if NULL then multi service as it will be based on the start - end date and schedule, if it has an occurrence_id then the record only pertains to that one occurrence.  This flag does not indicate the person serving total count, as they may be on a schedule but only one serving opportunity exists right now
+• the serving_opportunity_is_draft column is based on public serving_opportunity.is_draft, with no filters applied to this column value
+• AS OF LATEST UPDATE ONLY FUTURE MISSING SERVING OPS ARE ADDED PAST MAY BE MISSING SOME SERVING OCCURRENCES","Each row represents a single past serving opportunity occurrence (a single instance of a serving opportunity, for a specific date and time, for a specific person). 
+*see note about possible single and recurring of same person in same occurrence.
+• To prevent counting twice, count distinct on the ""PersonOccurrence_Key"" to get unique filled spots.
+• WARNING: this table is a work in progress, please avoid using unless Kirk Yamada approves",
+Custom Tables,(DATA) HC Data Warehouse,Events,Events DimEventAttendeeCheckIn,Kirk/Ron,4/21/2023,"Table containing information about event attendee check in. 
+For Child Check Ins (for both kids services and KSG) use the column [IsChildRoomCheckIn].
+If someone wants to see whic parent/person checked in a child, simply look at the column [GuardianPersonID]
+*THIS TABLE CONTAINS A FIX FOR MERGED PEOPLE, merged/deleted individuals are updated here to match HC Core where if a person is deleted/merged the latest person record after the merge is assigned to each record in the PersonID column.  At a later date this fix will be applied in the DWH layer instead of the DF layers so it can be removed from the DF logic.",one row per event check in,
+Custom Tables,(DATA) Staffnet,Small Group Campaigns,custom OneLife_Invite,Kirk/Ron,3/10/2023,"Data for person invites for the One Life Campaign in 2023, invite date represents the day the invite was sent out.  All other columns are in reference to the invites sent on that day.",Each row represents one day where invites were sent out.,
+Custom Tables,(DATA) Staffnet,Small Group Campaigns,custom OneLIfe_Registrations,Kirk/Ron,3/10/2023,"All data for this table is aggregated to the small group id (see grain). Multiple registration/reserve events materials reserved are summed into curriculum reserved and the first registration/reserve data is kept.  For pickup, picked up materials are summed and the latest pickup date is kept.",Each row represents one small group s registration and pickup events.  Thus unique on SmallGroup_Id.,
+Custom Tables,(DATA) Media,Media Engagements,custom Media_Engagements,Kirk/Ron,2/27/2023,"Media watch metrics by date and location.  This table only includes media for specific categories (this can be added to as needed).  As of 7/22/2021  includes only media category id 54 (Talk it Over).
+• The data source is Media Access Log and its updated via a stored procedure. Log entries are created when a person streams a view from anywhere connected to the media server 
+• this FORMERLY included but is not limited to Spotify and iTunes and RSS podcast feeds. Podcast data is now in Transistor
+• does NOT include Youtube
+
+DATA QUALITY: an individual's IP Address can generate multiple rows by clicking a media players multiple times. This custom dataflow has some processing to deduplicate these records so that a unique IP address for a specific media item is only counted once for one day.
+
+COLUMNS: [MediumType] 0 = Video Engagement & 1 = Document Engagement",Each row represents a single instance a media item was watched per day and per location (by IP address).,
+Custom Tables,(DATA) CMC,CMC Checkins,custom SK Milestones,Kirk/Ron,11/28/2022,"* THIS TABLE WILL BE DROPPED - PLEASE REFER TO THE SAME TABLE IN THE NEW LOCATION ""(DATA) CMC > Custom CMC SK Tables"" *
+CMC individual milestones based on Staffnet Commlists based on list name ""tags"".",Each row represents a unique milestone for one individual,
+Custom Tables,(DATA) CMC,Custom CMC SK Tables,custom SK Milestones,Kirk/Ron,11/28/2022,"CMC individual milestones based on Staffnet Commlists based on list name ""tags"".",Each row represents a unique milestone for one individual,
+Custom Tables,(DATA) CMC,Custom CMC SK Tables,custom CMC_SK_Child_CheckInHistory,Kirk/Ron,11/28/2022,Each check in instance is recorded here with relivant person and check in information.  This table is based on CMC SK related child check in data only.,Each row represents a single child check in instance recorded on the legacy CMC system,
+Custom Tables,(DATA) CMC,Custom CMC SK Tables,custom CMC_SK_Leader_CheckInHistory,Kirk/Ron,11/28/2022,Each check in instance is recorded here with relivant person and check in information.  This table is based on CMC SK related leader check in data only.,Each row represents a single leader check in instance recorded on the legacy CMC system,
+Custom Tables,(DATA) CMC,Custom CMC SK Tables,custom CMC_SK_Child_FirstTimers,Kirk/Ron,11/28/2022,This table contains a list of all the check in instances of children who are considered to be first time check ins based on the CMC system first time check in flag.  This flag is set based on the person checking in slecting the box.  There is no logic to dedup or remove individuals and this data reflects what is stored on the CMC system.  Thus a child can have more than one first time check in record in this table.,Each row represents a single child first time check in instance.  This is based on the individual manually checking the first time check in box thus it may or may not represent true first timers.,
+Custom Tables,(DATA) CMC,Custom CMC SK Tables,custom CMC_CheckInHistory_Person,Kirk/Ron,11/28/2022,Both leader and child check in data from the CMC system is unioned into this table.,Each row represents a single child or leader check in instance recorded on the legacy CMC system,
+Custom Tables,(DATA) HC Production,Custom HC SK Tables,custom Ministry Member SK Leaders Only,Kirk/Ron,11/28/2022,"Ministry Member table with Active ministry members (person not deleted or deceased), with additional 3 columns: SK leader count flag (per SK logic), SK leader health flag (per SK logic), and leader age.  Only includes people where count or health flag is 1.",Each row represents a unique ministry member (id column),
+Custom Tables,(DATA) HC Production,Custom HC SK Tables,custom HC_SK_Child_CheckInHistory,Kirk/Ron,11/28/2022,Each check in instance is recorded here with relivant person and check in information.  This table is based on HC SK related child check in data only.,Each row represents a single child check in instance recorded in HC using the event checkin feature,
+Custom Tables,(DATA) HC Production,Custom HC SK Tables,custom HC_SK_Leader_CheckInHistory,Kirk/Ron,11/28/2022,Each check in instance is recorded here with relivant person and check in information.  This table is based on HC SK related leader check in data only.,Each row represents a single leader check in instance recorded in HC using the event checkin feature,
+Custom Tables,(DATA) HC Production,Custom HC SK Tables,custom HC_SK_EventRoom,Kirk/Ron,11/28/2022,This table applies to HC realted SK child and leader check ins only.  It provides the event and room information related to a specific check in instance.  This table is unique on the HCSKER key and should onlyl be used by joining this key to the related key in the custom HC_SK_Leader_CheckInHistory and/or custom HC_SK_Child_CheckInHistory tables.,"Each row represents a unique event and room check in instance.  Thus the table is unique on its primary key, the HCSKER key field.",
+Custom Tables,(DATA) HC Production,Custom HC SK Tables,custom HC_SK_Child_FirstTimers,Kirk/Ron,11/28/2022,"This table contains a list of all the first time check in instances per the following logic.  The child has been marked as a first time check in on the HC system (milestone) and the child has not checked in at all on the old CMC check in system.
+This table should be unique per HC person record and contain true first time check ins only.",Each row represents a single child first time check in instance.  This should be unique based on the description notes.,
+Custom Tables,(DATA) HC Production,Saddleback Kids,custom Ministry Member SK Leaders Only,Kirk/Ron,11/28/2022,"* THIS TABLE WILL BE DROPPED - PLEASE REFER TO SAME TABLE IN THE ""(DATA) HC Production > Custom HC SK Tables"" DATAFLOW *
+Ministry Member table with Active ministry members (person not deleted or deceased), with additional 3 columns: SK leader count flag (per SK logic), SK leader health flag (per SK logic), and leader age.  Only includes people where count or health flag is 1.",Each row represents a unique ministry member (id column),
+Custom Tables,(DATA) HC Production,Ministry,public ministry_group,Jeremiah/Healthy Church,11/4/2022,"Some groups have weird numbers on them: This indicates the groups were carried over from StaffNet. For example, the Saddleback Men ministry at Lake Forest has a group ""Saddleback Men (146272)""
+
+• [group_type] column KEY: 1 = Role, 0 = Group
+• this table should be connected to 'public ministry_member' by ministry_id AND campus id",one row per ministry per campus per group/role.,
+Custom Tables,(DATA) HC Production,Ministry,public ministry_group_person,Jeremiah/Healthy Church,11/4/2022,this table is a cross reference table between 'public ministry_group' and 'custom DimPerson',one row per person per ministry per campus per group/role,
+Custom Tables,(DATA) HC Data Warehouse,Ministry,Ministry DimServingOpportunity,Jeremiah/Chris Dennis,11/3/2022,Table containing metadata for Serving opportunities,,
+Custom Tables,(DATA) HC Data Warehouse,Ministry,Ministry DimServingOpportunityMembers,Jeremiah/Chris Dennis,11/3/2022,"• contains info describing from what source someone signed up to volunteer in the [MemberSource] column
+• Table with information for people registered for serving opportunities",one row per serving opportunity per occurrence per person ID,
+Custom Tables,(DATA) HC Data Warehouse,Ministry,Ministry DimServingOpportunityVolunteerExcludedOccurrences,Jeremiah/Chris Dennis,11/3/2022,,,
+Custom Tables,(DATA) HC Data Warehouse,Ministry,Ministry DimServingOpportunityVolunteerOccurrence,Jeremiah/Chris Dennis,11/3/2022,,,
+Custom Tables,(DATA) HC Data Warehouse,Ministry,Summary WeeklyMinistryMetrics,Jeremiah/Chris Dennis,11/3/2022,"Summary view of Ministry volunteers per campus per week per month per year. 
+• The date of the week is the Monday of any given week. This impacts the columns [WeekStartActiveMembers] and [WeekEndActiveMembers]: the table starts the week on Monday and ends the week on Sunday.  Please keep this in mind when connecting to the date table.
+• data is updated weekly
+• Active Volunteers are either ""Pending"" or ""Active"" ministry member status
+• Churn Rate DEFINITION = Total of New active MINUS (removed or inactive members) for that week, year, campus, and ministry location",one row per ministry per campus per week,
+Custom Tables,(DATA) HC Data Warehouse,Custom ResponseCard,FollowUp ResponseCardDetail_Type (Hist DoNotUse),Kirk/Kirk,10/6/2022,"DO NOT USE THIS TABLE FOR REPORTING.
+It is only used to identify possible new terms that need to be added to the excel sheet that powers the ""RCWR FinalCategoryLookup"" table.
+Table based on response card details table that identifies positive (true/selected by person) responses of: Baptism, Class 101, First Time, and Salvations",Each row represents one unique response card detail Id row as this was the base table used to create this custom table,
+Custom Tables,(DATA) HC Data Warehouse,Custom ResponseCard,FollowUp ResponseCardDetail_Type,Kirk/Kirk,10/6/2022,"TABLE USE: This table should only be used in conjunction with the ""RCWR Final CategoryLookup"" table.  This should be done by inner joining the two tables on ""LookupString"" and ""ResponseCardSubFieldLabel"" then bringing in the Category field into the response card detail type table.
+Cleanup has already been applied to both join fields so no additional editing should be done.
+Use of this table and the other related table identify positive responses to any of the response card count categories.  But assume the following.  A positive count is based on a value of ""true"" or ""x"" and that the lookup for the count category is based on subfield only.
+TABLE CONTENTS:
+This table contains all rows of the ""followUp RepsonseCardDetail"" DWH table where the response value was considered true.  In addition the sub field label field was cleaned up to use as a join.","Each row represents a unique response card value entry  where the entry value was either ""true"" or ""x""",
+Custom Tables,(DATA) HC Data Warehouse,Custom ResponseCard,RCWR FinalCategoryLookup,Kirk/Kirk,10/6/2022,"This table should only be used in conjunction with the ""FollowUp ReponseCardDetail_Type"" table.  See that tables description on how to use.
+This table contains the unique lookup strings and their related count category type for response cards.  It gets this based on the excel settings sheet and combines across the counts page and value description page to match the excel sheets flow logic.",Each row represents a unique lookup string and its related response card count category.,
+Custom Tables,(DATA) HC Data Warehouse,Person,People FactEngagement,,10/6/2022,"•summary table of PersonEngagement. If a given touchpoint has multiple instances for the person ID, then the last date occurrence and first date occurrence are provided. Also the count of touchpoint instances per touchpointID is provided.
+SOURCE = People.PersonEngagement
+•For People.FactEngagement filtered with TouchpointID = 16 (Accepted Christ), and 17 (Baptism), some rows have null values in [LastDateTimeID] because their dates were before 1980. 
+• Fact table containing summary of each person's touchpoints with the Church
+• contains a confidential touchpointID = 61 for ""Last Giving Date"" stretching back to 2004",one row per person per touchpoint,
+Custom Tables,(DATA) HC Production,Response Cards,public response_card,,10/4/2022,"• Response Cards are given in the bulletin during the weekend service
+• Welcome Cards are given at the Connection Center when someone walks up to them",,
+Custom Tables,(DATA) HC Production,Response Cards,public response_card_entry,,10/4/2022,"• Response Cards are given in the bulletin during the weekend service
+• Welcome Cards are given at the Connection Center when someone walks up to them",,
+Custom Tables,(DATA) HC Production,Response Cards,public response_card_entry_value,,10/4/2022,"• Response Cards are given in the bulletin during the weekend service
+• Welcome Cards are given at the Connection Center when someone walks up to them",,
+Custom Tables,(DATA) HC Production,Response Cards,public response_card_field,,10/4/2022,"• Response Cards are given in the bulletin during the weekend service
+• Welcome Cards are given at the Connection Center when someone walks up to them",,
+Custom Tables,(DATA) HC Production,Response Cards,public response_card_section,,10/4/2022,"• Response Cards are given in the bulletin during the weekend service
+• Welcome Cards are given at the Connection Center when someone walks up to them",,
+Custom Tables,(DATA) HC Production,Response Cards,public response_card_sub_field,,10/4/2022,"• Response Cards are given in the bulletin during the weekend service
+• Welcome Cards are given at the Connection Center when someone walks up to them",,
+Custom Tables,(DATA) HC Data Warehouse,Followups,FollowUp ResponseCardDetail,,10/4/2022,"• Response Cards are given in the bulletin during the weekend service
+• Welcome Cards are given at the Connection Center when someone walks up to them
+Table with details of data on a response card",one row per response card entry value (e.g. one row per checkbox/fill-in),
+Custom Tables,(DATA) HC Production,Custom HC Tables,custom PersonContact,Kirk/Ron,9/21/2022,"This file contains the contact information that should be used for each individual person in HC.  If the person is deceased or in the status of do not contact then the appropriate contact fields are blanked.
+
+Data for this table is sourced from the following tables: person_contact_preference, person_giving, and reports.status","Each row represents one full primary contact set.
+This file should be unique per person but is not because of some data anomalies where a person does not have a single primary contact resulting in duplicate records per person.  See Contact_RecordCnt to identify these dups.",
+Custom Tables,(DATA) HC Data Warehouse,Person,People DimPerson,,9/13/2022,"* THIS TABLE WILL BE DROPPED * Use custom DimPerson instead;Table that houses all person records and their primary demograhic (including primary contact data) data as well as some primary key church metrics about a person. Does NOT contain person records from before Staffnet, so historical counts must use FactEngagement table.
+
+PersonID column is the data warehouse Ministry. It is used inside the data warehouse for tables from the ‘People’ schema, ‘Ministry’ schema, etc.  
+The HCPersonID is an ID from the Healthy Church database Use HCPersonID column in this table to connect to the person_id column of any other table from the ‘public’ schema.  
+UniquePersonID is the ID used on the person record in the Healthy Church Web Tool 
+
+SOURCE = Healthy Church; Staffnet (subset)(legacy one-time load)
+Table containing Hc and historical person records with key metadata about the person's journey in the Church",Individual person; 1 record = 1 person record in HC,
+Custom Tables,(DATA) ME App,Detailed DailyDevotions,DailyDevotions_Detailed,Kirk,9/12/2022,"This table provides a detailed list of all the devices and sessions that accessed the ME App daily devotions page per day.  Device and session ids are meant only to be used as unique identifiers not to link or display on the report.
+To use this table the device or session id should be aggregated and totaled by one or more of the attribute columns (date, login status, region/campus).
+The ""ME RegionCampus ID"" should (only) be joined to the same id in the ""custom ME CampusRegion"" table.  The rollup names as well as campus/rollup cross reference ids can be found there.
+*There is additional detailed documentation available (""ME App Custom Tables Build Details.docx"") which can be found in the SharePoint/teams drive.","Each row is a unique combination of date, device id, session id, login status, and region/campus rollup (rows deduped to ensure this)",
+Custom Tables,(DATA) ME App,Detailed DailyVerse,DailyVerse_Detailed,Kirk,9/12/2022,"This table provides a detailed list of all the devices and sessions that accessed the ME App verse of the day page per day.  Device and session ids are meant only to be used as unique identifiers not to link or display on the report.
+To use this table the device or session id should be aggregated and totaled by one or more of the attribute columns (date, login status, region/campus).
+The ""ME RegionCampus ID"" should (only) be joined to the same id in the ""custom ME CampusRegion"" table.  The rollup names as well as campus/rollup cross reference ids can be found there.","Each row is a unique combination of date, device id, session id, login status, and region/campus rollup (rows deduped to ensure this)",
+Custom Tables,(DATA) ME App,Detailed Tables,Event_Last6Mos,Kirk,9/12/2022,"This table contains all the ME App event related activities with no aggregation or filtering.
+Timestamp is the date/time the log record was loaded and eventTime_UTC is the actual time the log event was recorded.
+*There is additional detailed documentation available (""ME App Custom Tables Build Details.docx"") which can be found in the SharePoint/teams drive.",Each row represents an ME App event based log event,
+Custom Tables,(DATA) ME App,Detailed Tables,PageViews_Last6Mos,Kirk,9/12/2022,"This table contains all the ME App page view related activities with no aggregation or filtering.
+Timestamp is the date/time the log record was loaded and eventTime_UTC is the actual time the log event was recorded.
+*There is additional detailed documentation available (""ME App Custom Tables Build Details.docx"") which can be found in the SharePoint/teams drive.",Each row represents an ME App page view based log event,
+Custom Tables,(DATA) ME App,shared CampusRegion,custom ME CampusRegion,Kirk,9/12/2022,"This table is designed to be used with the ME App tables that have a ""ME RegionCampus ID"" column.  This table provides the rollup name and sort order to display on the report as well as the cross reference values to go from that id to the standard DWH campus and region ids.
+The ""ME RegionCampus ID"" should (only) be joined to the same id in the ""custom ME CampusRegion"" table.  The rollup names as well as campus/rollup cross reference ids can be found there.
+*There is additional detailed documentation available (""ME App Custom Tables Build Details.docx"") which can be found in the SharePoint/teams drive.",Each row represents a region/campus rollup category,
+Custom Tables,(DATA) ME App,Summary Devices,Devices_Summary_Daily,Kirk,9/12/2022,"This table provides the total number of unique devices that accessed the ME App on a particular day from a selected campus/region rollup.  Since the same device can appear in multiple campuses and in multiple days data from this table should not be aggregated for consumption.
+*There is additional detailed documentation available (""ME App Custom Tables Build Details.docx"") which can be found in the SharePoint/teams drive.",Each row represents a single day,
+Custom Tables,(DATA) ME App,Summary Devices,Devices_Summary_Monthly,Kirk,9/12/2022,"This table provides the total number of unique devices that accessed the ME App in a particular month for a specific campus/region rollup.
+The ""ME RegionCampus ID"" should (only) be joined to the same id in the ""custom ME CampusRegion"" table.  The rollup names as well as campus/rollup cross reference ids can be found there.
+*There is additional detailed documentation available (""ME App Custom Tables Build Details.docx"") which can be found in the SharePoint/teams drive.",Each row represents a specific month and campus/region rollup,
+Custom Tables,(DATA) ME App,Summary Devices,Devices_Summary_Monthly_LogIn,Kirk,9/12/2022,"This table provides the total number of unique devices that accessed the ME App in a particular month for a specific campus/region rollup AND was logged in to HC within the app.
+The ""ME RegionCampus ID"" should (only) be joined to the same id in the ""custom ME CampusRegion"" table.  The rollup names as well as campus/rollup cross reference ids can be found there.
+*There is additional detailed documentation available (""ME App Custom Tables Build Details.docx"") which can be found in the SharePoint/teams drive.",Each row represents a specific month and campus/region rollup,
+Custom Tables,(DATA) ME App,Summary Devices,Devices_Summary_Monthly_NotLogIn,Kirk,9/12/2022,"This table provides the total number of unique devices that accessed the ME App in a particular month for a specific campus/region rollup AND was NOT logged in to HC within the app.
+The ""ME RegionCampus ID"" should (only) be joined to the same id in the ""custom ME CampusRegion"" table.  The rollup names as well as campus/rollup cross reference ids can be found there.
+*There is additional detailed documentation available (""ME App Custom Tables Build Details.docx"") which can be found in the SharePoint/teams drive.",Each row represents a specific month and campus/region rollup,
+Custom Tables,(DATA) ME App,Summary Giving,Giving_Summary_Daily,Kirk,9/12/2022,"This table provides the total number of unique devices that access the giving page though the ME App by date.
+*There is additional detailed documentation available (""ME App Custom Tables Build Details.docx"") which can be found in the SharePoint/teams drive.",Each row represents a single day,
+Custom Tables,(DATA) ME App,Summary Giving,Giving_Summary_ByLogIn_Monthly,Kirk,9/12/2022,"This table provides the total number of unique devices that accessed the giving page though the ME App by month and by HC logged in status.
+*There is additional detailed documentation available (""ME App Custom Tables Build Details.docx"") which can be found in the SharePoint/teams drive.",Each row represents a month and HC logged in status,
+Custom Tables,(DATA) ME App,Summary Giving,Giving_Summary_Devices_Monthly,Kirk,9/12/2022,"This table provides the total number of unique devices that accessed the giving page for each region/campus rollup by month.
+The ""ME RegionCampus ID"" should (only) be joined to the same id in the ""custom ME CampusRegion"" table.  The rollup names as well as campus/rollup cross reference ids can be found there.
+*There is additional detailed documentation available (""ME App Custom Tables Build Details.docx"") which can be found in the SharePoint/teams drive.",Each row represents a region/campus rollup and month,
+Custom Tables,(DATA) ME App,Summary Giving,Giving_Summary_Sessions_Monthly,Kirk,9/12/2022,"This table provides that total number of unique sessions with at least one giving navigation in the ME App for that month.
+*There is additional detailed documentation available (""ME App Custom Tables Build Details.docx"") which can be found in the SharePoint/teams drive.",Each row represents a single month,
+Custom Tables,(DATA) ME App,Summary NewDevices,NewDevices_Detailed,Kirk,9/12/2022,"This table was not meant to be consumed for reporting, it is only required as a historical file to aid in the generation of the NewDevices_Summary_Daily file.
+*There is additional detailed documentation available (""ME App Custom Tables Build Details.docx"") which can be found in the SharePoint/teams drive.",Each row represents a unique device identifier and the first date it was captured in the ME App log (events or page views file),
+Custom Tables,(DATA) ME App,Summary NewDevices,NewDevices_Summary_Daily,Kirk,9/12/2022,"This table provides the number of new (first time this device id has been seen accessing the ME App) devices that accessed the ME App by date first seen.
+*There is additional detailed documentation available (""ME App Custom Tables Build Details.docx"") which can be found in the SharePoint/teams drive.",Each row represents a single day,
+Custom Tables,(DATA) ME App,Summary Sessions,Sessions_Summary_Daily,Kirk,9/12/2022,"This table provides the total number of unique sessions count per day, per campus, and per ME App HC log in status.  It is assumed as session will only take place in one of each of these, thus any overlap has been deduped.  So all unique session counts can be totaled across categories for consumption.
+The ""ME RegionCampus ID"" should (only) be joined to the same id in the ""custom ME CampusRegion"" table.  The rollup names as well as campus/rollup cross reference ids can be found there.
+*There is additional detailed documentation available (""ME App Custom Tables Build Details.docx"") which can be found in the SharePoint/teams drive.","Each row represents the total number of unique sessions for a specific day, related to a specific campus/region rollup and HC log in status type",
+Custom Tables,(DATA) ME App,Summary Sessions,Sessions_Summary_Daily_Dur,Kirk,9/12/2022,"This table provides the total number of unique sessions with a duration greater than zero seconds as well as the total duration of all sessions taking place on that day.
+*There is additional detailed documentation available (""ME App Custom Tables Build Details.docx"") which can be found in the SharePoint/teams drive.",Each row represents the totals for a specific day,
+Custom Tables,(DATA) ME App,Summary SmallGroups,SG_Sessions_Summary_Daily,Kirk,9/12/2022,"This table provides the total number of unique sessions that accessed a specific type of small group page via the ME App.  There are two different small group related pages a person can visit and they are broken out here as looking to join a small group or viewing their current small group account.
+*There is additional detailed documentation available (""ME App Custom Tables Build Details.docx"") which can be found in the SharePoint/teams drive.",Each row represents a single day and small group navigation type within the ME App,
+Custom Tables,(DATA) ME App,Summary SmallGroups,SG_Devices_Summary_Daily,Kirk,9/12/2022,"This table provides the total number of unique devices that accessed a specific type of small group page via the ME App.  There are two different small group related pages a person can visit and they are broken out here as looking to join a small group or viewing their current small group account.
+*There is additional detailed documentation available (""ME App Custom Tables Build Details.docx"") which can be found in the SharePoint/teams drive.",Each row represents a single day and small group navigation type within the ME App,
+Custom Tables,(DATA) ME App,Summary SmallGroups,SG_Devices_Summary_Monthly,Kirk,9/12/2022,"This table provides the total number of unique devices that accessed a specific type of small group page via the ME App aggregated to the monthly level.  There are two different small group related pages a person can visit and they are broken out here as looking to join a small group or viewing their current small group account.
+*There is additional detailed documentation available (""ME App Custom Tables Build Details.docx"") which can be found in the SharePoint/teams drive.",Each row represents a single month and small group navigation type within the ME App,
+Custom Tables,(DATA) ME App,Summary SmallGroups,SG_Tot_Devices_Summary_ByLogIn_Monthly,Kirk,9/12/2022,"This table provides the total number of unique devices that accessed any of the ME App small group pages broken out by the users HC login status and month.
+*There is additional detailed documentation available (""ME App Custom Tables Build Details.docx"") which can be found in the SharePoint/teams drive.",Each row represents a single month and HC login status type within the ME App,Metrics.DimDemographic
+Custom Tables,(DATA) ME App,Summary SmallGroups,SG_Tot_Devices_Summary_Monthly,Kirk,9/12/2022,"This table provides the total number of unique devices that accessed any of the ME App small group pages broken out by the campus/region rollup and month.
+The ""ME RegionCampus ID"" should (only) be joined to the same id in the ""custom ME CampusRegion"" table.  The rollup names as well as campus/rollup cross reference ids can be found there.
+*There is additional detailed documentation available (""ME App Custom Tables Build Details.docx"") which can be found in the SharePoint/teams drive.",Each row represents a single month and rollup/campus id,"• Shared DimCampus
+• Summary CampusRegionJunction
+• Summary Region"
+Custom Tables,(DATA) ME App,Summary Videos,Videos_Summary_Daily,Kirk,9/12/2022,"This table provides the total ME App video watch time, and video watch counts by day, region/campus rollup, and HC logged in status within the app.
+The ""ME RegionCampus ID"" should (only) be joined to the same id in the ""custom ME CampusRegion"" table.  The rollup names as well as campus/rollup cross reference ids can be found there.
+*There is additional detailed documentation available (""ME App Custom Tables Build Details.docx"") which can be found in the SharePoint/teams drive.","Each row represents a day, specific region/campus rollup, and HC login status type along with the totals/values for that unique combination",
+Custom Tables,(INT) Reporting Team,Internal Reporting,custom V2_Trickle_Exceptions,Ron,9/6/2022,Trickle (originating from V2) that fail from the integration inbound log from staffnet to HC,,
+Custom Tables,(DATA) HC Production,ME_App_General,Event,,7/29/2022,*TABLE DROPPED*,,
+Custom Tables,(DATA) HC Production,ME_App_General,PageViews,,7/29/2022,*TABLE DROPPED*,,
+Custom Tables,(DATA) HC Production,ME_App_General LEGACY,Event_Legacy,,7/29/2022,"*TABLE DROPPED*
+ME App data structured to match original input file for the ME App report v1.0.  This dataflow is no longer needed and the ""Event"" dataflow should be used instead",,
+Custom Tables,(DATA) HC Production,ME_App_General LEGACY,PageViews_Legacy,,7/29/2022,"*TABLE DROPPED*
+ME App data structured to match original input file for the ME App report v1.0.  This dataflow is no longer needed and the ""Event"" dataflow should be used instead",,
+Custom Tables,(DATA) HC Data Warehouse,Custom DWH Tables,custom DimCampus,Kirk/Ron,7/26/2022,"Standard shared DimCampus table with the addition of the ""Excl_Ext_Ind"" column.  This column is manually calculated based on the reporting teams requirements and is meant to be used to exclude all ""campuses"" that should not be in standard reports.  0 = Standard Campus for Reports, 1 = Extension for Reports Requireing Extensions, 2 = Exclude Off Most Reports",Each row represents a single campus/extension/location entity in the datawarehouse,
+Custom Tables,(DATA) HC Production,Custom HC Tables,custom Food_Pantry_Salvations,Heather/Ron,7/26/2022,"*THIS TABLE WILL BE DROPPED* Use (DATA) HC Data Warehouse > DWH_HC Tables > custom PersonLastEngagement instead.
+This table contains all the individuals who had a food pantry salvation based on the person note field.  This report shows any note and associated person data, where the note contains 1st contact language relating to a food pantry.  According to the process this should only be done for individuals who had a food pantry related salvation.",Each row represents a single valid food pantry note entry.  It is possible for there to be duplicate people in this table.,
+Custom Tables,(DATA) Media,Media Engagements,custom Podcast_Viewer,Jeremiah/Ron,7/26/2022,"The videos specific users based on user IP watched on a specific day.  Since some devices ping multiple times records are deduped down to the user IP, day, and media title/video level.",Each row represents a unique RemoteUserIDNumber and MediaTitle per AccessDate (unique IP address and video watched per day),
+Custom Tables,(DATA) Media,Media Engagements,custom Podcast_Unique_Viewer_IPs,Jeremiah/Ron,7/26/2022,This table allows the custom Podcast_Viewer ips to be cross referenced to a location.  Each unique IP address is assigned to a location (city) based on the IP range it falls into.,Each row represents a single RemoteUserIPNumber,
+Custom Tables,(DATA) HC Data Warehouse,Shared,Shared DimCampus (~ 8/2022 dropped; use custom DimCampus),,7/19/2022,"* THIS TABLE HAS BEEN DROPPED * Use custom DimCampus instead;
+Table containing metadata for each campus as defined on HC",,
+Custom Tables,(DATA) HC Data Warehouse,Shared,Shared DimDate (~ 8/2022 dropped; use custom DimDate),,7/18/2022,"*THIS TABLE HAS BEEN DROPPED* Use custom DimDate instead;
+Date calendar table that functions as key reference to warehouse date metrics",,
+Custom Tables,(DATA) HC Data Warehouse,Metrics,Metrics FactMetricsServiceWeek (* Use (DATA) HC Data Warehouse > DWH Views > Metrics FactMetricsServiceWeek instead;),,7/18/2022,"*THIS TABLE WILL BE DROPPED* Use (DATA) HC Data Warehouse > DWH Views > Metrics FactMetricsServiceWeek instead;
+Table containing metrics information about a service week",,
+Custom Tables,(DATA) 3rd Party,ME App Installs,SBCompanion_Installs,Kirk,5/26/2022,"This table contains the latest total Saddle Back Companion app install numbers as defined by leadership for the Google Play store and Apple App store for the designated month.  Google Play store is based on New Users, and the Apple App store is based on first time downloads.",Each row represents one months total number of installs for each app store (see notes in description),
+Custom Tables,(DATA) HC Data Warehouse,Custom DWH Tables,custom PersonLastEngagement,Ron,5/12/2022,"*THIS TABLE IS NO LONGER VALID AND IS PENDING REMOVAL*
+Unique, unique person ID for all individuals with the LastEngagmentDate based on the DWH person engagement table.  ExclusionFlag = 1 when
+Registered for a Light of the World and/or Grocery Distribution event and event was first contact with the church and only contact based on fact engagement.",Each row represents a person unique ID,
+Custom Tables,(DATA) HC Data Warehouse,DWH Views,Metrics FactMetricsServiceWeek,Jeremiah/Ron,5/12/2022,"Joins to the FactMetrics DWH table on Metric ID and provides service week date data for each metric record.
+Replaced the prior Metrics FactMetricsServiceWeek that was loaded as part of the DWH tables.",Each row represents the service week data for a particular metric id (unique on metric id not service week data),
+Custom Tables,(DATA) Group Manager,Small Group General,public group_activity,Kirk,3/8/2022,This table contains a record with a create date for each time a change was made in group manager that is recorded (based on system design).  The change is record with the date of the change with the modified value in the row.  Change is based on date time and activity type.,Each row represents a single small group activity record (any recorded change on the group manager system for a group),
+Standard Table,(DATA) Group Manager,Small Group General,public group_study,Kirk,3/8/2022,"Small group, group study listing.  This table contains all possible group study id and study name combinations.  Note, this is different than the ""study"" no group value, for those see public study table.","Each row represents a single small group, group study",Metrics FactMetrics (orchestrated via Joe Lee Data Warehouse)
+Standard Table,(DATA) HC Production,Events,event event,,2/24/2022,,,it populates some flags in other tables
+Standard Table,(DATA) HC Production,Events,event event_attendee_occurrence,,2/24/2022,,,
+Standard Table,(DATA) HC Production,Custom HC Tables,custom DimSHAPE,Jeremiah/Ron,2/15/2022,Response card data merged together to display SHAPE results toprovide report results as the 301 team requested.  The response card table was used to capture the shape assessment.,Each row represents a unique response card entry id.  Each response card entry id represents a single time an assessment was taken by an individual.,
+Standard Table,(DATA) HC Production,Custom HC Tables,custom Grade_Levels,Jeremiah/Ron,2/4/2022,Cross reference for the HC person grade level (in id form) to actual grade level,Each row represents one grade level and its associated HC person grade level / grade id,
+Standard Table,(DATA) HC Production,Custom HC Tables,custom Person_HC_Permissions,Heather/Ron,1/24/2022,HC application security roles assigned to a person,Each row represents a unique person and security role combination,
+Standard Table,(DATA) HC Production,Custom HC Tables,custom Light_of_the_World_Event_2021,Jeremiah/Ron,11/17/2021,Light of the world registrations with person id as well as number of guests in each signup party.  Table only includes 2021 LOTW signups.,Each row is the event_attendee_occurrence_id which is the unique identifier for each time a registration is made,
+Standard Table,(DATA) HC Production,QA,public answer,,11/2/2021,,,
+Standard Table,(DATA) HC Production,Service Template,public service_template_outline_person,,11/2/2021,,,
+Standard Table,(DATA) HC Data Warehouse,Shared,Shared DimQuestions,,11/1/2021,"Table with information about Questions set up throughout the HC platform. i.e. event registration questions, mobile app questions, website questions, connection card questions (not yet available)",,
+Standard Table,(DATA) Group Manager,Small Group General,public vw_campus_xref,Kirk/Ron,10/21/2021,Small group campus id to HC campus id cross reference table.  This table is a manual table maintained by Ron.,One record per small group campus,
+Standard Table,(DATA) HC Production,Ministry,public ministry_settings_milestone,Jeremiah/Healthy Church,10/11/2021,,,
+Standard Table,(DATA) Group Manager,Small Group Contact,custom Group_Activity (All Contacts),Kirk/Ron,9/24/2021,"All group activity contacts.
+Bulk call, text, social media, and personal counts added if the same message (time and content) was sent to multiple groups (count = number of groups contacted).
+Bulk email counts for emails where message first 100 and last 100 char match.  
+Content flag if there is comment text = 1 else 0.",Each row represents a single contact record sent out (recorded in system).  If same contact applied to multiple groups only one row exists but bulk count columns become populated.,
+Standard Table,(DATA) Group Manager,Small Group Contact,custom Group_Activity (Group Health),Kirk/Ron,9/24/2021,All small group P designation and health plan history,Each row represents a change in the status of a small groups p-designation status of health plan status,
+Standard Table,(DATA) CMC,CMC Checkins,custom Rooms,Kirk/Ron,9/8/2021,All CMC non-deleted rooms,Each row represents one room in the CMC system identified by RoomID,
+Standard Table,(DATA) CMC,CMC Checkins,custom CMC Log In History,Kirk/Ron,9/8/2021,All CMC log in data for last 5 years with calculated service attended date and time,"Each row represents a unique check in event (person, room, time, etc.)",
+Standard Table,(DATA) CMC,CMC Checkins,custom Unique Checkins,Kirk/Ron,9/8/2021,Unique record per child who checked in in the last 5 years and the parent associated with that latest check in,"Each row represents a unique child who has checked in in the last 5 years along with his/her latest parent, contact info, and check in date","Metrics FactMetrics
+Metrics FactMetricsServiceWeek"
+Standard Table,(DATA) CMC,CMC Checkins,custom Recent No Shows,Kirk/Ron,9/8/2021,Children who attended 2x in prior weeks (10-7) and attended 2x in prior weeks (6-3) and did not attended in prior weeks (2-1).  Based on CMC log in data and identifying services by day of the week.,Each row represents a single individual (child) who has not checked in based on the logic in the description,
+Standard Table,(DATA) Staffnet,Small Group Health Assessment,dbo SmallGroup_Assessments,Ron,8/20/2021,Small group health assessment summary data for one assessment date/time by one person.  Final scores for each of the five purposes.,Each row represents one assessment for a person at a particular time for a specific small group,public ministry_member_status_history
+Standard Table,(DATA) Staffnet,Small Group Health Assessment,dbo HealthPlanner_Individuals_NextSteps,Ron,8/20/2021,Individual health assessment planner next steps for individuals and the status and due date for the next step,Each row represents a single next step item per individual,None
+Standard Table,(DATA) Staffnet,Small Group Health Assessment,dbo HealthPlanner_NextSteps,Ron,8/20/2021,"Individual health assessment planner, next steps table with general next steps as well as custom next steps that individuals input","Each row represents one possible next step item, with NextStepID as key",None
+Standard Table,(DATA) HC Data Warehouse,Person,People DimTouchpoint,,7/26/2021,"IncludeInReporting is a flag that is used in to indicate if the touchpoint should be be loaded to the reporting tables during the ETL loads
+Table containint metadata for touchpoints or person engagements with the Church. This can go from a key mileston like accepted Christ to simpler data points like logged in into Healthy church",,None
+Standard Table,(DATA) HC Data Warehouse,Person,People PersonEngagement,,7/26/2021,"• Table is large in the order of millions of rows
+• SOURCE = Health Church; Staffnet (legacy one-time load);Excel file with CLASS milestones since 1980 (legacy one-time load).
+• Table containing detail of every touchpoint that each person has had with the Church at specific campus/locations
+• contains a confidential touchpointID = 61 for ""Last Giving Date"" stretching back to 2010
+• ""Watched a Video"", ""Read a Document"", and ""Listened to an Audio"" only include Journey related media a person engaged with (6/2024)",one row per person per touchpoint per campus per day,None
+Standard Table,(DATA) HC Data Warehouse,Shared,Summary CampusRegionJunction,,7/26/2021,Table that shows joins of campus to regions,,
+Standard Table,(DATA) HC Data Warehouse,Shared,Shared DimVenue,,7/26/2021,Table containing metadata for venues as creatd in HC,,
+Standard Table,(DATA) HC Data Warehouse,Shared,Summary Region,,7/26/2021,Table containing metadata for different regions as defined by the organization,,
+Standard Table,(DATA) HC Data Warehouse,Shared,Shared DimTime,,7/26/2021,Calendar table representing time for key date metrics stored in the warehouse,,
+Standard Table,(DATA) HC Data Warehouse,Shared,Shared DimDateTime,,7/26/2021,"*THIS TABLE HAS BEEN DROPPED* Use custom DimDate and/or Shared DimTime instead;
+Date and time table for Metrics and service references. To be deprecated by DimDate table",,
+Standard Table,(DATA) HC Data Warehouse,Events,Events DimEventSchedule,,7/26/2021,"this table can be used as a dimension table to read the Events DimEventOccurrence table
+Table containing information about the schedule for events","one row per event schedule, i.e. a group of dates that is tied to one or more events",
+Standard Table,(DATA) HC Data Warehouse,Events,Summary EventRegistrationQuestions,,7/26/2021,Table with information about people's responses to event registration questions,,
+Standard Table,(DATA) HC Data Warehouse,Events,Events DimEventTag,,7/26/2021,Table with information about event tags as defined on HC,,
+Standard Table,(DATA) HC Data Warehouse,Events,Events DimEventPublication,,7/26/2021,Table with information about event publication to online platforms. A publication makes the event visible to people through tenant website or other event platforms like eventbrite,,
+Standard Table,(DATA) HC Data Warehouse,Events,Events DimEvent,,7/26/2021,Table containing metadata for Events records,,
+Standard Table,(DATA) HC Data Warehouse,Events,Events DimEventOccurrence,,7/26/2021,Table containing information for specific event ocurrences. i.e. A one time event has only one ocurrence. A recurring event has multiple ocurrences,"one row per event instance. If an event (e.g. CLASS) is repeated, then it will have multiple event occurrences",
+Standard Table,(DATA) HC Data Warehouse,Events,Events DimEventScheduleEntityType,,7/26/2021,Table containing information about the type of event and event schedule for a specific event,,
+Standard Table,(DATA) HC Data Warehouse,Events,Events DimEventContact,,7/26/2021,Table containing information about the contact person for events as defined on HC,,
+Standard Table,(DATA) HC Data Warehouse,Events,Events DimEventAttendeeOccurrence,,7/26/2021,"Table containing information about people who registered for events for one, some, or all ocurrences",,
+Standard Table,(DATA) HC Data Warehouse,Events,Events DimEventScheduleSequence,,7/26/2021,"Table containing further information about event schedules, including recurrence patterns, start date, end date, etc.",,
+Standard Table,(DATA) HC Data Warehouse,Events,Events FactEvents,,7/26/2021,Fact table containing metrics about events created and managed on HC,,
+Standard Table,(DATA) HC Data Warehouse,Events,Events DimWorshipServiceCategory,,7/26/2021,Dimension table for Worship Service categories created on HC,,
+Standard Table,(DATA) HC Data Warehouse,Metrics,Metrics FactMetrics,,7/26/2021,Table with metrics as events or services metrics as captured on HC or brought in from historical metric sources,,
+Standard Table,(DATA) HC Data Warehouse,Metrics,Metrics DimDemographic,,7/26/2021,Dimension table for the different demographic groups contained in the warehouse,,
+Standard Table,(DATA) HC Data Warehouse,Metrics,Metrics DimEventType,,7/26/2021,Dimension table containing metadata for the different event types as recorded on HC,,
+Standard Table,(DATA) HC Production,Ministry,public ministry_member_source,Jeremiah/Healthy Church,7/23/2021,"sources can include SHAPE, In Person, etc.",one row per per ministry per campus per person,
+Standard Table,(DATA) HC Production,Ministry,public ministry_member_status_history,Jeremiah/Healthy Church,7/23/2021,"when the grain says ""per ministry member id,"" this is equivalent to per ministry per campus per person",one row per ministry member id per status,
+Standard Table,(DATA) HC Production,Ministry,public serving_opportunity,Jeremiah/Healthy Church,7/23/2021,,,
+Standard Table,(DATA) HC Production,Ministry,public serving_opportunity_settings,Jeremiah/Healthy Church,7/23/2021,,,
+Standard Table,(DATA) HC Production,Ministry,public serving_opportunity_settings_milestone,Jeremiah/Healthy Church,7/23/2021,,,
+Standard Table,(DATA) HC Production,Ministry,public serving_opportunity_volunteer,Jeremiah/Healthy Church,7/23/2021,,,
+Standard Table,(DATA) HC Production,Ministry,public serving_opportunity_volunteer_occurrence,Jeremiah/Healthy Church,7/23/2021,,,
+Standard Table,(DATA) HC Production,Notifications,notification notification,Jer,7/23/2021,,one row per communication message,
+Standard Table,(DATA) HC Production,Person,public milestone,,7/23/2021,,,
+Standard Table,(DATA) HC Production,Person,public person_address,,7/23/2021,,,
+Standard Table,(DATA) HC Production,Person,public person_contact_preference,,7/23/2021,,,
+Standard Table,(DATA) HC Production,Person,public person_milestone,,7/23/2021,,,
+Standard Table,(DATA) HC Production,Person,public person_phone,,7/23/2021,,,
+Standard Table,(DATA) HC Production,Person,public person_relationship,,7/23/2021,,,
+Standard Table,(DATA) HC Production,Person,public view_person_email,,7/23/2021,,,
+Standard Table,(DATA) HC Production,Person,yes,,7/23/2021,,,
+Standard Table,(DATA) HC Production,Shared,public church_entity,,7/23/2021,,,
+Standard Table,(DATA) HC Production,Shared,public team,,7/23/2021,,,
+Standard Table,(DATA) HC Production,Shared,public team_member,,7/23/2021,,,
+Standard Table,(DATA) HC Production,Events,event event_attendee,,7/23/2021,,,
+Standard Table,(DATA) HC Production,Events,event occurrence,,7/23/2021,,,
+Standard Table,(DATA) HC Production,Events,event schedule,,7/23/2021,,,
+Standard Table,(DATA) HC Production,Events,event schedule_entity_type,,7/23/2021,,,
+Standard Table,(DATA) HC Production,Events,event schedule_sequence,,7/23/2021,,,
+Standard Table,(DATA) HC Production,Followups,public task,,7/23/2021,,,
+Standard Table,(DATA) HC Production,Followups,public task_assignment_history,,7/23/2021,,,
+Standard Table,(DATA) HC Production,Followups,public task_subject,,7/23/2021,,,
+Standard Table,(DATA) HC Production,Followups,public task_template,,7/23/2021,,,
+Standard Table,(DATA) HC Production,Followups,workflows rule,,7/23/2021,,,
+Standard Table,(DATA) HC Production,Followups,workflows rule_entity_condition,,7/23/2021,,,
+Standard Table,(DATA) HC Production,Custom HC Tables,custom Central_Household,Kirk/Ron,7/22/2021,"Household name and person 1 and 2 id's.  Single individuals will also show,but without person 2 info.",Each row represents one household (custom logic for spouses).,
+Standard Table,(DATA) HC Production,Custom HC Tables,custom Relationship_ChildParent,Kirk/Ron,7/22/2021,"This file helps to identify a child's two parents (errors are flagged, in Address_Match_Ind, see below) and display the child's, name address, contact info, and parents names.
+*Address_Match_Ind
+Assign code per rules below:
+1 = Child address matches parent 1 only (or only P1 exists and address matches)
+2 = Child address matches parent 1 and 2 (and both P1 and P2 exist)
+3 = Child address matches neither parent address
+4 = More than 2 parents exists (indicates an error that needs to be fixed in data)
+5 = Multiple same gender parent",Each row represents one child (person) record,
+Standard Table,(DATA) HC Production,Custom HC Tables,custom PersonMerged,Kirk/Ron,7/22/2021,"This file contains all HC person record merges.  The source person id is the person id (record) before the merge and the target person id is the person record it was merged into.
+Source and target person id is the person unique id.",Each row represents a person record merge that occurred in the HC log file.  This file is unique per merge occurrence not per person.,
+Standard Table,(DATA) HC Production,Custom HC Tables,custom Person_HC_URL,Kirk/Ron,7/22/2021,"This table provides a cross reference to get an individuals Healthy Church person record link (takes you directly to the person in HC online).
+The person_id in this table is the person HC id not unique id.",Each row represents one person in HC,
+Standard Table,(DATA) HC Production,Custom HC Tables,reports Countries,Kirk/Ron,7/22/2021,This table acts as a cross reference to allow the user to get the full country name if only the 2 or 3 character code is provided for the country in HC or the DWH.,Each row represents one country,
+Standard Table,Giving,Failed Trickle Attempts,vw_FailedTrickleAttempsII,Ron,7/22/2021,Custom table for Ron's Failed Trickle Attempts Report,,
+Standard Table,(DATA) Mission 3rd Party,Focus Mission,TripParticipants,Fernando,7/22/2021,Focus Missions table that contains person level data.  Table should contain ALL Focus Missions person level data (no filters).,"Each row represents an individual going on a particular mission trip.
+Unique identifier is a combination of PartitionKey and RowKey.
+PartitionKey in this file joins to the RowKey on the Trips file.",
+Standard Table,(DATA) Mission 3rd Party,Focus Mission,Trips,Fernando,7/22/2021,Focus Missions table that contains trip level data.  Table should contain all Focus Missions trip level data (no filters).,"Each row represents one mission trip.
+Row key is the unique identifier.",
+Standard Table,(DATA) Mission 3rd Party,Focus Mission XRef,custom TripParticipants_XRef,Jeremiah,7/22/2021,"Cross reference table to join a Focus Mission trip participant to a HC person. Developed by the R&I team and designed and tested to be used to provide a single methodology to join the person records from two different systems.
+This table was constructed referencing both FocusMission and HC data tables which are hidden within this dataflow.","Each row represents a single person (participant row key) from the Trip Participants file.  
+Not a single person on the HC person side (multiple participant row keys can join to a single HC person id).",
+Standard Table,(DATA) Mission 3rd Party,Food Pantry Data,FoodPantry_Data20,Kirk,7/22/2021,"Food pantry data captured and entered into the Mission team jot form.
+This data is from an excel file that the Mission Team uploads to SharePoint  and only contains 2020 data.",Each row represents one food pantry event,
+Standard Table,(DATA) Mission 3rd Party,Food Pantry Data,FoodPantry_Data21,Kirk,7/22/2021,"Food pantry data captured and entered into the Mission team jot form.
+This data is from an excel file that the Mission Team uploads to SharePoint  and only contains 2021 data.",Each row represents one food pantry event,
+Standard Table,(DATA) Mission 3rd Party,Food Pantry Data,FoodPantry_RU,Kirk,7/22/2021,"Food pantry file campus to level 1 and level 2 roll up.  This is report specific data and should only be used in conjunction with the other Food Pantry data files.
+This data is from an excel file that the Mission Team uploads to SharePoint.",Each row represents one campus option on the food pantry report (note that what the food pantry report recognizes as a campus does not match HC campuses),
+Standard Table,(DATA) ID Server,General,public LoginLog,Fernando,7/22/2021,For HC developer use,,
+Standard Table,(DATA) ID Server,General,public AspNetUsers,Fernando,7/22/2021,For HC developer use,,
+Standard Table,(DATA) ID Server,General,public EventLog,Fernando,7/22/2021,For HC developer use,,
+Standard Table,(DATA) 3rd Party,Google Analytics,Session_Timestamp,Fernando,7/22/2021,,,
+Standard Table,(DATA) Media,Media Engagements,custom All_Media,Kirk/Ron,7/22/2021,"All media titles on the system with rollups for series and category.
+This does not contain any watch metrics.",Each row represents a single media title where MediaID is key.,
+Standard Table,(DATA) Media,Media Engagements,custom Small_Group_Curriculum_Watched,Kirk/Ron,7/22/2021,All watch history from the media server (for the small group curriculum) with the media name and the id of the individual or small group (depending on user selection) of the viewer.  Includes all records except for deleted view record.,Each row represents an engagement (watch) by an individual or small group for a particular media title (media id) on a specific day,
+Standard Table,(DATA) Media,Media Engagements,custom Engagements_By_Location,Kirk/Ron,7/22/2021,Media library access log clicks on videos down to title and city (of ip address) level.  Contains all data for last 2 years from run date.  Table keeps only a single record for each IP address per video per day.,"Each row represents a summary of total views over the entire 2 years by a specific media title (media id) and location (region, city, state, and zip)",
+Standard Table,(DATA) Mission 3rd Party,Peace GS,custom PersonTrip_Static,Kirk/Ron,7/22/2021,"All Peace GS person and trip data with HC Unique ID join at rundate, based on email, first name, last name match.  Removed duplicate entries for participant and leader so only leader record shows per trip.  This data is static since this system is not is use any longer.",Each row represents one individual per mission trip.,
+Standard Table,(DATA) Staffnet,Response Card Hist,custom Legacy_Response_Cards_Submitted,Ron,7/22/2021,Legacy response card data from Staffnet.  Jan 2018-Feb 2018.  Count data rolled up to the campus level and service date.  This is a static data table.,Each row represents a unique service response card form (form name and service date),
+Standard Table,(DATA) Staffnet,Service Metrics,dbo vw_BaptismAndSalvations,Ron,7/22/2021,Baptism and salvation counts from Staffnet mobile attendance for all records.,Each row represents a unique service (campus and time),
+Standard Table,(DATA) Group Manager,Small Group General,public Participant,Kirk/Ron,7/22/2021,"Participant table from Group Manager, no filters.
+Id_user = person unique id",One record exists for each person and group combination.,Shared.DimVenue
+View,(DATA) Group Manager,Small Group General,public Study,Kirk/Ron,7/22/2021,"Small group study table from Group Manager, no filters",Each row represents one small group study,"Metrics.FactMetrics, Metrics.FactMetrics
+
+"
+Standard Table,(DATA) Group Manager,Small Group General,public User_Account,Kirk/Ron,7/22/2021,"User account table from Group Manager, no filter. 
+Id = person unique id",One record per person,
+Standard Table,(DATA) Group Manager,Small Group General,custom Profile,Kirk/Ron,7/22/2021,"Entire small group profile table with LT1, LT2, Healthplan, and Campus info (from group manager)
+Id = person unique id",Each row represents a unique person (id column represents persons unique Id),
+Standard Table,(DATA) Group Manager,Small Group General,custom Small_Group,Kirk/Ron,7/22/2021,"Entire small group table with added: CP name and email, LC name and email, ACL name and email, host name and email, campus name, small group URL, designation and health plan date, country, region, language.
+Note that status = 0 is active and 1 = inactive, 2 = pending",Each row represents a single small group,
+Standard Table,(DATA) Group Manager,Small Group General,public Campus,Kirk/Ron,7/22/2021,Campus table for Group Manager no filters,Each row represents a single campus,
+Standard Table,(DATA) Group Manager,Small Group General,custom User_Account_Interested_URL,Kirk/Ron,7/22/2021,"All individuals with a current role of interested and a URL that points to that individual in Group Manager.
+Id ties to person unique id",Each row represents one unique person who is interested in joining one or more small groups and is still in the interested status,
+Standard Table,(DATA) Group Manager,Small Group General,public Group_Tag,Kirk/Ron,7/22/2021,Small group tags,Each row represents a combination of the tag assigned and the small group it is assigned to,
+Standard Table,(DATA) Group Manager,Small Group History,public vw_Reports_Small_Groups_History,Kirk/Ron,7/22/2021,"All small group activity history for small group open and close (status change and date).
+*Non material issue was identified where groups that opened then closed and then opened again did not display correctly in this report.  In second instance open date displayed original open date and if group re-opened after closing without closing again, no second record was created to indicate open again.",Each row represents a change in the status of a small group (open or close).  See * in description as this table is not working completely as expected,
+Standard Table,(DATA) Group Manager,Small Group History,custom Small_Group_History,Kirk/Ron,7/22/2021,Month end small group totals by campus.  Records are aggregated based on the small group activity log.,Each row represents a summary based on the month end date and small group campus,
+Standard Table,(DATA) Group Manager,Small Group History,custom Small_Group_Status_Monthly_History,Kirk/Ron,7/22/2021,Monthly total active and inactive groups by campus based on small group activity log data,Each row represents a summary based on the month end date and small group campus,
+Standard Table,(DATA) Staffnet,Volunteer Checkins,custom Volunteer_Hours,Kirk/Ron,7/22/2021,Staffnet bling in and out data.  All data for the past 2 years are included per refresh date.,Each row represents a single bling in and out by an individual,
+Standard Table,(DATA) Staffnet,Volunteer Checkins,custom Departments,Kirk/Ron,7/22/2021,Department name cross reference for the Staffnet bling in data.,Each row represents a unique department in Staffnet,

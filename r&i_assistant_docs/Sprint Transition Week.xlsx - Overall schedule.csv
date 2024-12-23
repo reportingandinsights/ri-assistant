@@ -1,0 +1,22 @@
+,Note: the Reporting  & Insights team uses the word 'feature' to refer to what Azure Devops calls a Product Backlog Item,,,,,,,,,,
+,Friday & Monday,,,Tuesday,,Wednesday,,Thursday,,Friday,
+,Old Sprint's Last Days,,,Sprint Transition,,Sprint Transition,,Sprint Transition,,New Sprint Starts,
+Time,Meeting?,Meeting Description,To-do,Meeting?,To-do,Meeting?,To-do,Meeting?,To-do,Meeting?,To-do
+start of work day-10am,,,"Prepare for meeting
+• Demonstration of any shareable progress and atomic metrics accessibility
+• For each feature you own, determine worked-on status (delivered, partial, or zero)and whether to move to the next feature or attempt to finish in the sprint transition.
+• If feature is incomplete, explain why.
+• Identify if you have any vacation days in the current sprint
+",,"• decompose tasks (both your own tasks and coworkers' tasks under your features and look for tasks that can be removed)
+• identify lingers for sprint planning
+• Complete commits from old sprint, if any",,"• decompose tasks (both your own tasks and coworkers' tasks under your features and look for tasks that can be removed)
+• identify lingers for sprint planning
+• Complete commits from old sprint, if any",,Plan committed features for next sprint,,work
+10am-10:30am/11am,SCRUM,normal SCRUM but also mentioning which features may extend into the Sprint transition,,The 3 Monday meetings may be moved to Tuesday,,,,SCRUM,normal SCRUM but also mentioning which features have been completed in the Sprint transition,No meetings,work
+,Sprint Review,Riad updates the statuses of features in Azure DevOps ,review prior sprint features and share demonstrations,,Communicate with coworkers about changing feature priorities and checking status of tasks to be finished in prior sprint,,Communicate with coworkers about changing feature priorities and checking status of tasks to be finished in prior sprint,(The Wednesday SCRUM may be moved to Thursday),Verbalize if any leftover features from the Old Sprint have been completed,,work
+,Sprint Planning A,move features into the current sprint for potential decomp. Moving extra features is ok,assign features to the New sprint and prioritize them,,,,,Sprint Commit,Identify committed features for next sprint,,work
+11am-end of work day,,,decompose tasks,,"• decompose tasks (both your own tasks and coworkers' tasks under your features and look for tasks that can be removed)
+• identify lingers for sprint planning
+• Complete commits from old sprint, if any",,"• decompose tasks (both your own tasks and coworkers' tasks under your features and look for tasks that can be removed)
+• identify lingers for sprint planning
+• Complete commits from old sprint, if any",,,,work
