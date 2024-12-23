@@ -1,13 +1,15 @@
-import torch
-import sentence_transformers
-import os
-import groq
-from pinecone.grpc import PineconeGRPC as Pinecone
 # from langchain.document_loaders import PyPDFLoader, UnstructuredExcelLoader, Docx2txtLoader
 # from langchain_community.document_loaders import UnstructuredImageLoader, GithubFileLoader
 # from langchain_community.embeddings import HuggingFaceEmbeddings
 # from langchain.schema import Document
+import sentence_transformers
+from pinecone.grpc import PineconeGRPC as Pinecone
+import os
+import groq
 import streamlit as st
+
+
+### Initializing APIs, Groq system prompt, and response streaming ###
 
 groq_client = groq.Groq(api_key=st.secrets["GROQ_API_KEY"])
 pinecone_client = Pinecone(api_key=st.secrets["PINECONE_API_KEY"])
@@ -18,7 +20,7 @@ system_prompt = f'''
 SYSTEM PROMPT: You are a confident expert at understanding and explaining business technology and development to interns and volunteers. Let's take this step-by-step:
 First, answer any questions based on the data provided and always consider the context of the question, providing the most accurate and relevant information when forming a response.
 Second, if unsure of anything, mention it in the response and provide a web search suggestion or other documents for further research. 
-Finally, cite your sources below your response only.'''
+Finally, cite your sources using bullet-points below your response only.'''
 
 def parse_groq_stream(stream):
     ''' parse groq content stream to feed to streamlit '''
@@ -27,6 +29,8 @@ def parse_groq_stream(stream):
             if chunk.choices[0].delta.content is not None:
                 yield chunk.choices[0].delta.content
 
+
+### Streamlit App ###
 
 st.title("💬 R&I Intern & Volunteer Chatbot")
 
@@ -62,7 +66,7 @@ if query := st.chat_input("How can I help?"):
     # Store the augmented query
     # st.session_state.augmented_queries.append({"role": "user", "content": augmented_query})
 
-    # embed the prompt, query the pinecone database, and create a llm-friendly query 
+    # embed the prompt, query the pinecone database, and create a llm query that contains the context
     query_embed = sentence_transformers.SentenceTransformer("sentence-transformers/all-mpnet-base-v2").encode(query)
     pinecone_matches = pinecone_index.query(vector=query_embed.tolist(), top_k=5, include_metadata=True, namespace=pinecone_namespace)
     contexts = [match['metadata']['text'] for match in pinecone_matches['matches']]
