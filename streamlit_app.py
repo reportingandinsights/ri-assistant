@@ -3,20 +3,37 @@ from langchain_community.document_loaders.csv_loader import CSVLoader
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.schema import Document
 from langchain_pinecone import PineconeVectorStore
-import sentence_transformers
+from pinecone import Pinecone
 from pinecone.grpc import PineconeGRPC as Pinecone
+import sentence_transformers
 import os
 import groq
 import streamlit as st
 import time
 
 
-### Initializing APIs, Groq system prompt, and response streaming ###
+### Initializing Pinecone, Groq system prompt, and response streaming ###
 
 groq_client = groq.Groq(api_key=st.secrets["GROQ_API_KEY"])
+embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
 pinecone_client = Pinecone(api_key=st.secrets["PINECONE_API_KEY"])
-pinecone_index = pinecone_client.Index("ri-assist")
+
+index_name = "ri-assist"
+existing_indexes = [index_info["name"] for index_info in pinecone_client.list_indexes()]
+
+if index_name not in existing_indexes:
+    pinecone_client.create_index(
+        name=index_name,
+        dimension=768,
+        metric="cosine",
+        spec=ServerlessSpec(cloud="aws", region="us-east-1"),
+    )
+    while not pinecone_client.describe_index(index_name).status["ready"]:
+        time.sleep(1)
+
+pinecone_index = pinecone_client.Index(index_name)
 pinecone_namespace = ""
+vectorstore = PineconeVectorStore(index=pinecone_index, embedding=embeddings)
 
 system_prompt = f'''
 SYSTEM PROMPT: You are an expert at understanding and explaining business technology and Power BI development to interns. Let's take this step-by-step:
@@ -41,8 +58,6 @@ def rag_documents() -> None:
     with st.sidebar:
         with st.spinner("Updating documents..."):
             directory_path = "./r&i_assistant_docs"
-            embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
-            vectorstore = PineconeVectorStore(index_name="ri-assist", embedding=embeddings)
 
             dir_doc_ids, dir_docs = _process_directory(directory_path)
             github_ids, github_documents = _process_github()
