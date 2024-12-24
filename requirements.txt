@@ -11,5 +11,4 @@ sentence-transformers
 # openpyxl
 # onnx==1.16.1
 # pi-heif
-time
 streamlit
