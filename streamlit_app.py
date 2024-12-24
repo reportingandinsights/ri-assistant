@@ -1,10 +1,8 @@
 from langchain_community.document_loaders import UnstructuredImageLoader, GithubFileLoader, PyPDFLoader, UnstructuredExcelLoader, UnstructuredMarkdownLoader, Docx2txtLoader
 from langchain_community.document_loaders.csv_loader import CSVLoader
-# from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.schema import Document
 from pinecone import Pinecone, ServerlessSpec
-# from pinecone.grpc import PineconeGRPC as Pinecone
 from langchain_pinecone import PineconeVectorStore
 import sentence_transformers
 import os
@@ -60,11 +58,17 @@ def rag_documents() -> None:
         with st.spinner("Updating documents..."):
             directory_path = "./r&i_assistant_docs"
 
-            dir_doc_ids, dir_docs = _process_directory(directory_path)
-            github_ids, github_documents = _process_github()
+            dir_docs_ids, dir_docs = _process_directory(directory_path)
+            vectorstore.add_documents(documents=dir_docs, ids=dir_docs_ids)
+            print('upserting docs:', dir_docs_ids)
 
-            vectorstore.add_documents(documents=dir_docs, ids=dir_doc_ids)
-            vectorstore.add_documents(documents=github_documents, ids=github_ids)
+            github_docs_ids, github_docs = _process_github()
+            vectorstore.add_documents(documents=github_docs, ids=github_docs_ids)
+            print('upserting docs:', github_docs_ids[len(github_docs_ids)//2:])
+
+            print('completed upserting all docs')
+
+
         success = st.success("Documents updated successfully!")
         time.sleep(2.5)
         success.empty()
@@ -88,33 +92,23 @@ def _process_directory(directory_path) -> tuple:
             loader = None
             if file.endswith(".pdf"):
                 loader = PyPDFLoader(file_path)
-                built_dir_doc = _build_directory_document(file_path, loader)
-                ids.append(built_dir_doc.id)
-                data.append(built_dir_doc)
             elif file.endswith(".docx"):
                 loader = Docx2txtLoader(file_path)
-                built_dir_doc = _build_directory_document(file_path, loader)
-                ids.append(built_dir_doc.id)
-                data.append(built_dir_doc)
             elif file.endswith(".xlsx"):
                 loader = UnstructuredExcelLoader(file_path)
-                built_dir_doc = _build_directory_document(file_path, loader)
-                ids.append(built_dir_doc.id)
-                data.append(built_dir_doc)
             elif file.endswith(".csv"):
                 loader = CSVLoader(file_path)
-                built_dir_doc = _build_directory_document(file_path, loader)
-                ids.append(built_dir_doc.id)
-                data.append(built_dir_doc)
             elif file.endswith(".md"):
                 loader = UnstructuredMarkdownLoader(file_path)
-                built_dir_doc = _build_directory_document(file_path, loader)
-                ids.append(built_dir_doc.id)
-                data.append(built_dir_doc)
             # elif files.endswith(".png"):
             #   loader = UnstructuredImageLoader(file_path)
 
-            print('uploading:', file_path)
+            if loader != None:
+                built_dir_doc = _build_directory_document(file_path, loader)
+                ids.append(built_dir_doc.id)
+                data.append(built_dir_doc)
+
+            print('loading:', file_path)
 
     return (ids, data)
     

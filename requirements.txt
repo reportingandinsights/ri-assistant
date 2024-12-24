@@ -1,6 +1,7 @@
 torch
 groq
 pinecone-client
+pinecone
 langchain
 langchain-community 
 langchain-pinecone
