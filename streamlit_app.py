@@ -45,10 +45,13 @@ Finally, cite your sources using bullet-points below your response only.'''
 def parse_groq_stream(stream):
     ''' parse groq content stream to feed to streamlit '''
     for chunk in stream:
-        if chunk.choices:
-            if chunk.choices[0].delta.content is not None:
-                yield chunk.choices[0].delta.content
-
+        try:
+            if chunk.choices:
+                if chunk.choices[0].delta.content is not None:
+                    yield chunk.choices[0].delta.content
+        except Exception as e:
+            st.session_state.messages.append({"role": "assistant", "content": f"Sorry, there's been an error: {e}. Please try again."})
+            print(f"Error: {e}")
 
 ### RAG Document Loading to Pinecone ###
 
