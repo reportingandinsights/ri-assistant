@@ -2,9 +2,9 @@ from langchain_community.document_loaders import UnstructuredImageLoader, Github
 from langchain_community.document_loaders.csv_loader import CSVLoader
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.schema import Document
+from pinecone import Pinecone, ServerlessSpec
+# from pinecone.grpc import PineconeGRPC as Pinecone
 from langchain_pinecone import PineconeVectorStore
-from pinecone import Pinecone
-from pinecone.grpc import PineconeGRPC as Pinecone
 import sentence_transformers
 import os
 import groq
