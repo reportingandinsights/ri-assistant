@@ -7,7 +7,6 @@ pinecone[grpc]
 unstructured
 unstructured_inference
 sentence-transformers
-os
 # docx2txt
 # openpyxl
 # onnx==1.16.1
