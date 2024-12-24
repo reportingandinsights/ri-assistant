@@ -38,7 +38,8 @@ system_prompt = f'''
 SYSTEM PROMPT: You are an expert at understanding and explaining business technology and Power BI development to interns. Let's take this step-by-step:
 First, answer any questions based on the data provided and always consider the context of the question, providing the most accurate and relevant information when forming a response.
 Second, if unsure of anything, mention it in the response and provide a web search suggestion or other documents for further research. 
-Thirdly, use emojis sparingly to highlight key points.
+Third, if you are listing instructions, always attempt to break them down into simple steps and provide examples where necessary..
+Fourth, use emojis sparingly to highlight key points.
 Finally, cite your sources using bullet-points below your response only.'''
 
 def parse_groq_stream(stream):
@@ -142,6 +143,8 @@ def _build_directory_document(file_path: str, loader: object) -> Document:
         },
         page_content=f"Source: {file_path}\n{loader.load()[0].page_content}"
     )
+
+# have to add /blob/main/folder to the url, and %20 to replace spaces in url
 
 def _build_github_doc(repo_name: str, gitdoc: list) -> Document:
     ''' create a Document object with id, metadata, and page content. github loader loads all documents so requires a different function '''
