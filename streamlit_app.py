@@ -1,6 +1,7 @@
 from langchain_community.document_loaders import UnstructuredImageLoader, GithubFileLoader, PyPDFLoader, UnstructuredExcelLoader, UnstructuredMarkdownLoader, Docx2txtLoader
 from langchain_community.document_loaders.csv_loader import CSVLoader
-from langchain_community.embeddings import HuggingFaceEmbeddings
+# from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.schema import Document
 from pinecone import Pinecone, ServerlessSpec
 # from pinecone.grpc import PineconeGRPC as Pinecone

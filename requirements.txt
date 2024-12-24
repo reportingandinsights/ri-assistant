@@ -1,10 +1,11 @@
 torch
 groq
+pinecone-client
 langchain
 langchain-community 
 langchain-pinecone
+langchain-huggingface
 # pinecone[grpc]
-pinecone
 unstructured
 unstructured_inference
 sentence-transformers
