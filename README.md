@@ -8,7 +8,7 @@
 
 ## How to use RIA?
 
-1. ☁️ Open in Streamlit cloud (recommended): [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://chatbot-template.streamlit.app/)
+1. ☁️ Open in Streamlit cloud (recommended): [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://ri-assist-demov1.streamlit.app/)
 
 2. 🖥️ Run locally (details in dev section)
 
