@@ -2,6 +2,7 @@ from langchain_community.document_loaders import UnstructuredImageLoader, Github
 from langchain_community.document_loaders.csv_loader import CSVLoader
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.schema import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pinecone import Pinecone, ServerlessSpec
 from langchain_pinecone import PineconeVectorStore
 import sentence_transformers
@@ -58,33 +59,28 @@ def parse_groq_stream(stream):
 def rag_documents() -> None:
     ''' loads documents and uploads them to the pinecone database '''
 
+    # chosen arbitrarily - chunk size is how many characters to split the document into. some documents are too big to send to the AI all at once
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=100)
+
     with st.sidebar:
         with st.spinner("Updating documents..."):
             directory_path = "./r&i_assistant_docs"
 
-            dir_docs_ids, dir_docs = _process_directory(directory_path)
+            dir_docs_ids, dir_docs = _process_directory(directory_path, text_splitter)
             vectorstore.add_documents(documents=dir_docs, ids=dir_docs_ids)
             print('upserting docs:', dir_docs_ids)
 
-            github_docs_ids, github_docs = _process_github()
+            github_docs_ids, github_docs = _process_github(text_splitter)
             vectorstore.add_documents(documents=github_docs, ids=github_docs_ids)
-            print('upserting docs:', github_docs_ids[len(github_docs_ids)//2:])
+            print('upserting docs:', github_docs_ids)
 
             print('completed upserting all docs')
-
 
         success = st.success("Documents updated successfully!")
         time.sleep(2.5)
         success.empty()
 
-# from sys import getsizeof
-# too_big = []
-# for text in df['text'].tolist():
-#     if getsizeof(text) > 5000:
-#         too_big.append((text, getsizeof(text)))
-# print(f"{len(too_big)} / {len(df)} records are too big")
-
-def _process_directory(directory_path) -> tuple:
+def _process_directory(directory_path: str, text_splitter: object) -> tuple:
     ''' resursively processes all files in a directory returns a tuple of ids and data '''
     ids = []
     data = []
@@ -108,15 +104,19 @@ def _process_directory(directory_path) -> tuple:
             #   loader = UnstructuredImageLoader(file_path)
 
             if loader != None:
-                built_dir_doc = _build_directory_document(file_path, loader)
-                ids.append(built_dir_doc.id)
-                data.append(built_dir_doc)
+                # directory loads documents one at a time
+                text = loader.load()[0].page_content # gets a string of text from the file
+                split_text = text_splitter.split_text(text)
 
-            print('loading:', file_path)
+                for index, t in enumerate(split_text):
+                    built_dir_doc = _build_document(file_path, t, index)
+                    ids.append(built_dir_doc.id)
+                    data.append(built_dir_doc)
+                    print('loading:', file_path)
 
     return (ids, data)
     
-def _process_github() -> tuple:
+def _process_github(text_splitter: object) -> tuple:
     ''' creates Documents for all files in reportingandinsights common-code github repo, returns a tuple of ids and data '''
     ids = []
     data = []
@@ -127,38 +127,29 @@ def _process_github() -> tuple:
         access_token=os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN"),
         file_filter=lambda file_path: file_path.endswith(".md") or file_path.endswith(".txt") or file_path.endswith(".xml"),
     )
-    
-    for gitdoc in loader.load():
-        built_gitdoc = _build_github_doc("https://github.com/reportingandinsights/common-code/", gitdoc)
-        ids.append(built_gitdoc.id)
-        data.append(built_gitdoc)
 
-        print('uploading:', gitdoc.metadata['path'])
+    # github loads all documents as a list, so need to iterate through each document
+    for gitdoc in loader.load():
+        file_path = 'https://github.com/reportingandinsights/common-code/blob/main/' + gitdoc.metadata['path']
+        split_text = text_splitter.split_text(gitdoc.page_content)
+
+        for index, text in enumerate(split_text):
+            built_gitdoc = _build_document(file_path, text, index)
+            ids.append(built_gitdoc.id)
+            data.append(built_gitdoc) 
+            print('loading:', file_path)
 
     return (ids, data)
 
-def _build_directory_document(file_path: str, loader: object) -> Document:
+def _build_document(file_path: str, text: str, index: int) -> Document:
     ''' create a Document object with id, metadata, and page content '''
     return Document(
-        id=file_path,
+        id=file_path + '-chunk-' + str(index),
         metadata={
             "source": file_path
         },
-        page_content=f"Source: {file_path}\n{loader.load()[0].page_content}"
+        page_content=f"Source: {file_path}\n{text}"
     )
-
-# have to add /blob/main/folder to the url, and %20 to replace spaces in url
-
-def _build_github_doc(repo_name: str, gitdoc: list) -> Document:
-    ''' create a Document object with id, metadata, and page content. github loader loads all documents so requires a different function '''
-    return Document(
-        id=f"{repo_name}{gitdoc.metadata['path']}",
-        metadata={
-            "source": f"{repo_name}{gitdoc.metadata['path']}"
-        },
-        page_content=f"Source: {repo_name}{gitdoc.metadata['path']}\n{[gitdoc][0].page_content}" # convert the doc to a 1-element list to access the page_content
-    )
-
 
 ### Streamlit App ###
 
