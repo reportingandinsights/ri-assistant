@@ -32,6 +32,3 @@ RIA is a Python Streamlit app that uses Groq's llama-3.1-70b-versatile model, Pi
    ```
    $ streamlit run streamlit_app.py
    ```
-
-Groq, Pinecone, and Streamlit accounts are registered under the reportingandinsights user.
-API keys are stored in the 1Password database.
