@@ -1,6 +1,6 @@
 # Knowledge Transfer for 💬 RIA
 
-This guide will give a top-down walkthrough of services and important codebase snippets used to power RIA for future maintenance, starting from the services that the client would see down to the actual code.
+This guide will give a walkthrough of services and important codebase snippets used to power RIA for future maintenance, starting from the services that the client would see down to the actual code.
 
 ## ⌨️ Development
 This section will walk through how to get the code and install software dependencies from the Github repository.
