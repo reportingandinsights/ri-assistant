@@ -6,12 +6,8 @@ langchain
 langchain-community 
 langchain-pinecone
 langchain-huggingface
-# pinecone[grpc]
+langchain-googledrive
 unstructured
 unstructured_inference
 sentence-transformers
-# docx2txt
-# openpyxl
-# onnx==1.16.1
-# pi-heif
 streamlit

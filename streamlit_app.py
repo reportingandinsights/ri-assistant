@@ -3,6 +3,7 @@ from langchain_community.document_loaders.csv_loader import CSVLoader
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.schema import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_googledrive.document_loaders import GoogleDriveLoader
 from pinecone import Pinecone, ServerlessSpec
 from langchain_pinecone import PineconeVectorStore
 import sentence_transformers
@@ -36,12 +37,11 @@ pinecone_namespace = ""
 vectorstore = PineconeVectorStore(index=pinecone_index, embedding=embeddings)
 
 system_prompt = f'''
-SYSTEM PROMPT: You are an expert at understanding and explaining business technology and Power BI development to interns. Let's take this step-by-step:
-First, answer any questions based on the data provided and always consider the context of the question, providing the most accurate and relevant information when forming a response.
-Second, if unsure of anything, mention it in the response and provide a web search suggestion or other documents for further research. 
-Third, if you are listing instructions, always attempt to break them down into simple steps, and provide examples where necessary.
-Fourth, use emojis sparingly to highlight key points.
-Finally, cite your sources using bullet-points below your response only.'''
+SYSTEM PROMPT: You are an expert at understanding and explaining Saddleback Reporting and Insights documentation and Power BI. Let's take this step-by-step:
+First: answer any questions based on the data provided and always consider the context of the question, providing the most accurate information when forming a response.
+Second: if unsure of anything, mention it in the response and provide a web search suggestion or other documents for further research. 
+Third: if you are listing instructions, always attempt to break them down into steps, and provide examples where necessary.
+Finally: cite your sources using bullet-points below your response only.'''
 
 def parse_groq_stream(stream):
     ''' parse groq content stream to feed to streamlit '''
@@ -63,8 +63,8 @@ def rag_documents() -> None:
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=100)
 
     with st.sidebar:
-        with st.spinner("Updating documents..."):
-            directory_path = "./r&i_assistant_docs"
+        with st.spinner('Updating documents...'):
+            directory_path = './r&i_assistant_docs'
 
             dir_docs_ids, dir_docs = _process_directory(directory_path, text_splitter)
             vectorstore.add_documents(documents=dir_docs, ids=dir_docs_ids)
@@ -76,7 +76,7 @@ def rag_documents() -> None:
 
             print('completed upserting all docs')
 
-        success = st.success("Documents updated successfully!")
+        success = st.success('Documents updated successfully!')
         time.sleep(2.5)
         success.empty()
 
@@ -90,17 +90,17 @@ def _process_directory(directory_path: str, text_splitter: object) -> tuple:
             file_path = os.path.join(root, file)
             
             loader = None
-            if file.endswith(".pdf"):
+            if file.endswith('.pdf'):
                 loader = PyPDFLoader(file_path)
-            elif file.endswith(".docx"):
+            elif file.endswith('.docx'):
                 loader = Docx2txtLoader(file_path)
-            elif file.endswith(".xlsx"):
+            elif file.endswith('.xlsx'):
                 loader = UnstructuredExcelLoader(file_path)
-            elif file.endswith(".csv"):
+            elif file.endswith('.csv'):
                 loader = CSVLoader(file_path)
-            elif file.endswith(".md"):
+            elif file.endswith('.md'):
                 loader = UnstructuredMarkdownLoader(file_path)
-            # elif files.endswith(".png"):
+            # elif files.endswith('.png'):
             #   loader = UnstructuredImageLoader(file_path)
 
             if loader != None:
@@ -122,10 +122,10 @@ def _process_github(text_splitter: object) -> tuple:
     data = []
 
     loader = GithubFileLoader(
-        repo="reportingandinsights/common-code",
-        branch="main",
-        access_token=os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN"),
-        file_filter=lambda file_path: file_path.endswith(".md") or file_path.endswith(".txt") or file_path.endswith(".xml"),
+        repo='reportingandinsights/common-code',
+        branch='main',
+        access_token=os.getenv('GITHUB_PERSONAL_ACCESS_TOKEN'),
+        file_filter=lambda file_path: file_path.endswith('.md') or file_path.endswith('.txt') or file_path.endswith('.xml'),
     )
 
     # github loads all documents as a list, so need to iterate through each document
@@ -144,32 +144,23 @@ def _process_github(text_splitter: object) -> tuple:
 def _build_document(file_path: str, text: str, index: int) -> Document:
     ''' create a Document object with id, metadata, and page content '''
     return Document(
-        id=file_path + '-chunk-' + str(index),
+        id=f'{file_path}-chunk-{str(index)}',
         metadata={
             "source": file_path
         },
-        page_content=f"Source: {file_path}\n{text}"
+        page_content=f'Source: {file_path}\n{text}'
     )
 
 ### Streamlit App ###
 
-st.title("💬 R&I Assistant (RIA) Chatbot")
+st.title('💬 R&I Assistant (RIA) Chatbot')
 
 # Create a session state variable to store the chat messages. This ensures that the messages persist across reruns.
-if "messages" not in st.session_state:
+if 'messages' not in st.session_state:
     st.session_state.messages = [
         {"role": "assistant", "content": system_prompt}, 
         {"role": "assistant", "content": ":wave: Hi I'm RIA! I'm here to help you with any questions. Feel free to ask me anything!"},
     ]
-
-# if "augmented_queries" not in st.session_state:
-#     st.session_state.augmented_queries = []
-
-# Display the existing chat messages via `st.chat_message`.
-# for message in st.session_state.messages:
-#     with st.chat_message(message["role"]):
-#         if "SYSTEM PROMPT" not in message["content"]:
-#             st.markdown(message["content"])
 
 # Displaying initial message and not the system prompt
 for i in range(1, len(st.session_state.messages)):
@@ -177,22 +168,19 @@ for i in range(1, len(st.session_state.messages)):
         st.markdown(st.session_state.messages[i]["content"])
 
 # Create a chat input field to allow the user to enter a message at bottom of page
-if query := st.chat_input("How can I help?"):
+if query := st.chat_input('How can I help?'):
 
     # Store and display the current prompt.
     st.session_state.messages.append({"role": "user", "content": query})
-    with st.chat_message("user"):
+    with st.chat_message('user'):
         st.markdown(query)
 
-    # Store the augmented query
-    # st.session_state.augmented_queries.append({"role": "user", "content": augmented_query})
-
     # embed the prompt, query the pinecone database, and create a llm query that contains the context
-    with st.spinner("Thinking..."):
-        query_embed = sentence_transformers.SentenceTransformer("sentence-transformers/all-mpnet-base-v2").encode(query)
-        pinecone_matches = pinecone_index.query(vector=query_embed.tolist(), top_k=5, include_metadata=True, namespace=pinecone_namespace)
+    with st.spinner('Thinking...'):
+        query_embed = sentence_transformers.SentenceTransformer('sentence-transformers/all-mpnet-base-v2').encode(query)
+        pinecone_matches = pinecone_index.query(vector=query_embed.tolist(), top_k=10, include_metadata=True, namespace=pinecone_namespace)
         contexts = [match['metadata']['text'] for match in pinecone_matches['matches']]
-        augmented_query = "<CONTEXT>\n" + "\n-------\n".join(contexts[:10]) + "\n-------\n</CONTEXT>\n\nMY QUESTION:\n" + query
+        augmented_query = f'''<CONTEXT>\n\n-------\n{''.join(contexts[:10])}\n-------\n</CONTEXT>\n\nMY QUESTION:\n {query}'''
         
     # Generate a response.
     stream = groq_client.chat.completions.create(
@@ -201,19 +189,19 @@ if query := st.chat_input("How can I help?"):
             # note that the groq llama model has a 6000 token/minute limit 
             # this restricts message history when I try to send history larger than 6000 tokens (which is like 1 question)
             # therefore I have to make do with no conversation history
-            # {"role": m["role"], "content": m["content"]}
-            # for m in st.session_state.messages
-            {"role": "assistant", "content": system_prompt},
-            {"role": "user", "content": augmented_query},
+            {"role": m["role"], "content": m["content"]}
+            for m in st.session_state.messages
+            # {"role": "assistant", "content": system_prompt},
+            # {"role": "user", "content": augmented_query},
         ],
         stream=True,
     )
 
     # Stream the response to the chat using `st.write_stream`, then store it in session
-    with st.chat_message("assistant"):
+    with st.chat_message('assistant'):
         response = st.write_stream(parse_groq_stream(stream))
     st.session_state.messages.append({"role": "assistant", "content": response})
     
 with st.sidebar:
-    st.button("Update documents", on_click=lambda: rag_documents())
-    st.button("Clear chat", on_click=lambda: st.session_state.pop("messages", None))
+    st.button('Update documents', on_click=lambda: rag_documents())
+    st.button('Clear chat', on_click=lambda: st.session_state.pop('messages', None))
