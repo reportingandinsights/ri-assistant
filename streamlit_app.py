@@ -3,7 +3,7 @@ from langchain_community.document_loaders.csv_loader import CSVLoader
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.schema import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_googledrive.document_loaders import GoogleDriveLoader
+# from langchain_googledrive.document_loaders import GoogleDriveLoader
 from pinecone import Pinecone, ServerlessSpec
 from langchain_pinecone import PineconeVectorStore
 import sentence_transformers
@@ -20,8 +20,9 @@ embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-b
 pinecone_client = Pinecone(api_key=st.secrets["PINECONE_API_KEY"])
 
 index_name = "ri-assist"
-existing_indexes = [index_info["name"] for index_info in pinecone_client.list_indexes()]
+pinecone_namespace = ""
 
+existing_indexes = [index_info["name"] for index_info in pinecone_client.list_indexes()]
 if index_name not in existing_indexes:
     pinecone_client.create_index(
         name=index_name,
@@ -33,8 +34,7 @@ if index_name not in existing_indexes:
         time.sleep(1)
 
 pinecone_index = pinecone_client.Index(index_name)
-pinecone_namespace = ""
-vectorstore = PineconeVectorStore(index=pinecone_index, embedding=embeddings)
+st.session_state.vectorstore = PineconeVectorStore(index=pinecone_index, embedding=embeddings)
 
 system_prompt = f'''
 You are an expert chatbot specialized in understanding and explaining Power BI concepts, as well as company-specific documentation. Let's think step-by-step:
@@ -55,7 +55,7 @@ Answer questions related to company policies on data usage, reporting standards,
 When responding:
 Always ensure your explanations are clear, concise, and easy to understand for both beginner and advanced users.
 If the answer involves company-specific processes or documents, refer to the most up-to-date and accurate resources available.
-Cite your documents you used as sources using bullet-points below your response only.
+Cite the file path of documents you used as sources using bullet-points below your response only.
 
 Example scenarios:
 1) A user asks, “How do I create a DAX measure to calculate year-over-year growth in Power BI?” You should walk them through the DAX formula and explain how it works in the context of their dataset.
@@ -77,56 +77,42 @@ def parse_groq_stream(stream):
 
 ### RAG Document Loading to Pinecone ###
 
-def rag_documents_folder() -> None:
-    ''' loads documents and uploads them to the pinecone database '''
+def rag_documents_folder(internal_folder_path: str) -> None:
+    ''' loads documents from a folder and uploads them to the pinecone database '''
 
     # chosen arbitrarily - chunk size is how many characters to split the document into. some documents are too big to send to the AI all at once
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=100)
 
     with st.sidebar:
         with st.spinner('Updating documents...'):
-            directory_path = './r&i_assistant_docs'
+            try:                
+                dir_docs_ids, dir_docs = _process_directory(internal_folder_path, text_splitter)
+                st.session_state.vectorstore.add_documents(documents=dir_docs, ids=dir_docs_ids)
+                print('upserting docs:', dir_docs_ids)
+                success = st.success('Documents updated successfully!')
+                time.sleep(2)
+                success.empty()
+            except:
+                error = st.error('Not an folder')
+                time.sleep(2)
+                error.empty()
+        
+# def rag_documents_drive(folder_url: str) -> None:
+#     ''' gets a google drive folder url and uploads that folder to the pinecone database '''
 
-            dir_docs_ids, dir_docs = _process_directory(directory_path, text_splitter)
-            vectorstore.add_documents(documents=dir_docs, ids=dir_docs_ids)
-            print('upserting docs:', dir_docs_ids)
+#     # chosen arbitrarily - chunk size is how many characters to split the document into. some documents are too big to send to the AI all at once
+#     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=100)
 
-            github_docs_ids, github_docs = _process_github(text_splitter)
-            vectorstore.add_documents(documents=github_docs, ids=github_docs_ids)
-            print('upserting docs:', github_docs_ids)
+#     loader = GoogleDriveLoader(
+#         folder_id=folder_url.split('/')[-1],
+#     )
 
-            print('completed upserting all docs')
+#     with st.sidebar:
+#         with st.spinner('Updating documents...'):
 
-        success = st.success('Documents updated successfully!')
-        time.sleep(2)
-        success.empty()
-
-def rag_documents_drive(folder_url: str) -> None:
-    ''' gets a google drive folder url and uploads that folder to the pinecone database '''
-
-    # chosen arbitrarily - chunk size is how many characters to split the document into. some documents are too big to send to the AI all at once
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=100)
-
-    loader = GoogleDriveLoader(
-        folder_id=folder_url.split('/')[-1],
-    )
-
-    with st.sidebar:
-        with st.spinner('Updating documents...'):
-
-            dir_docs_ids, dir_docs = _process_directory(directory_path, text_splitter)
-            vectorstore.add_documents(documents=dir_docs, ids=dir_docs_ids)
-            print('upserting docs:', dir_docs_ids)
-
-            github_docs_ids, github_docs = _process_github(text_splitter)
-            vectorstore.add_documents(documents=github_docs, ids=github_docs_ids)
-            print('upserting docs:', github_docs_ids)
-
-            print('completed upserting all docs')
-
-        success = st.success('Documents updated successfully!')
-        time.sleep(2)
-        success.empty()
+#         success = st.success('Documents updated successfully!')
+#         time.sleep(2)
+#         success.empty()
 
 def rag_documents_github() -> None:
     ''' loads github documents and uploads them to the pinecone database '''
@@ -134,7 +120,7 @@ def rag_documents_github() -> None:
     with st.sidebar:
         with st.spinner('Updating documents...'):
             github_docs_ids, github_docs = _process_github(text_splitter)
-            vectorstore.add_documents(documents=github_docs, ids=github_docs_ids)
+            st.session_state.vectorstore.add_documents(documents=github_docs, ids=github_docs_ids)
             print('upserting docs:', github_docs_ids)
 
         success = st.success('Documents updated successfully!')
@@ -147,6 +133,9 @@ def _process_directory(directory_path: str, text_splitter: object) -> tuple:
     data = []
 
     for root, _, files in os.walk(directory_path):
+        if not os.path.isdir(directory_path):
+            raise ValueError
+        
         for file in files:
             file_path = os.path.join(root, file)
             
@@ -210,6 +199,24 @@ def _build_document(file_path: str, text: str, index: int) -> Document:
         page_content=f'Source: {file_path}\n{text}'
     )
 
+def clear_database() -> None:
+    ''' delete and recreate an empty pinecone index '''
+    pinecone_client.delete_index(index_name)
+    time.sleep(4)
+    existing_indexes = [index_info["name"] for index_info in pinecone_client.list_indexes()]
+    if index_name not in existing_indexes:
+        pinecone_client.create_index(
+            name=index_name,
+            dimension=768,
+            metric="cosine",
+            spec=ServerlessSpec(cloud="aws", region="us-east-1"),
+        )
+        while not pinecone_client.describe_index(index_name).status["ready"]:
+            time.sleep(1)
+
+    pinecone_index = pinecone_client.Index(index_name)
+    st.session_state.vectorstore = PineconeVectorStore(index=pinecone_index, embedding=embeddings)
+
 ### Streamlit App ###
 
 st.title('💬 R&I Assistant (RIA) Chatbot')
@@ -261,6 +268,8 @@ if query := st.chat_input('How can I help?'):
     
 with st.sidebar:
     # drive_folder_url = st.text_input('Google Drive Folder URL', 'https://drive.google.com/drive/folders/1cBoruJzjN1m8TmEtBeSjpZsxawNMRYfg')
-    st.button('Update Folder Documents', on_click=lambda: rag_documents_folder())
+    internal_folder_path = st.text_input('Local Folder Path', './r&i_assistant_docs/00_Dictionary Files')
+    st.button('Update Folder Documents', on_click=lambda: rag_documents_folder(internal_folder_path))
     st.button('Update Github Documents', on_click=lambda: rag_documents_github())
     st.button('Clear chat', on_click=lambda: st.session_state.pop('messages', None))
+    st.button('Clear database', on_click=lambda: clear_database())
