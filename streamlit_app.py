@@ -272,4 +272,18 @@ with st.sidebar:
     st.button('Update Folder Documents', on_click=lambda: rag_documents_folder(internal_folder_path))
     st.button('Update Github Documents', on_click=lambda: rag_documents_github())
     st.button('Clear chat', on_click=lambda: st.session_state.pop('messages', None))
-    st.button('Clear database', on_click=lambda: clear_database())
+    st.button('Clear database', on_click=lambda: confirm_clear_database())
+
+### Confirmation Modals
+
+@st.dialog('Clear Database')
+def confirm_clear_database():
+    st.warning('Are you sure you want to clear the database of all documents?', icon='⚠️')
+    st.write('You will have to re-upload all documents to the database.')
+    if st.button('Yes'):
+        clear_database()
+        st.rerun()
+    if st.button('No'):
+        st.rerun()
+
+# https://stackoverflow.com/questions/78303342/streamlit-button-on-click-how-to-use-it
