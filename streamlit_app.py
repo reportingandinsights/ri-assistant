@@ -77,7 +77,7 @@ def parse_groq_stream(stream):
 
 ### RAG Document Loading to Pinecone ###
 
-def rag_documents() -> None:
+def rag_documents_folder() -> None:
     ''' loads documents and uploads them to the pinecone database '''
 
     # chosen arbitrarily - chunk size is how many characters to split the document into. some documents are too big to send to the AI all at once
@@ -260,7 +260,7 @@ if query := st.chat_input('How can I help?'):
     st.session_state.messages.append({"role": "assistant", "content": response})
     
 with st.sidebar:
-    drive_folder_url = st.text_input('Google Drive Folder URL', 'https://drive.google.com/drive/folders/1cBoruJzjN1m8TmEtBeSjpZsxawNMRYfg')
-    st.button('Update Drive Documents', on_click=lambda: rag_documents_drive())
+    # drive_folder_url = st.text_input('Google Drive Folder URL', 'https://drive.google.com/drive/folders/1cBoruJzjN1m8TmEtBeSjpZsxawNMRYfg')
+    st.button('Update Folder Documents', on_click=lambda: rag_documents_folder())
     st.button('Update Github Documents', on_click=lambda: rag_documents_github())
     st.button('Clear chat', on_click=lambda: st.session_state.pop('messages', None))
