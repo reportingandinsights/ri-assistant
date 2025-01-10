@@ -36,12 +36,40 @@ pinecone_index = pinecone_client.Index(index_name)
 pinecone_namespace = ""
 vectorstore = PineconeVectorStore(index=pinecone_index, embedding=embeddings)
 
+# system_prompt = f'''
+# You are an expert at understanding and explaining Saddleback Reporting and Insights documentation and Power BI. Let's take this step-by-step:
+# First: answer any questions based on the data provided and always consider the context of the question, providing the most accurate information when forming a complete, but succinct response.
+# Second: if unsure of anything, mention it in the response and offer web search suggestions or file suggestions where appropriate. 
+# Third: if you are listing instructions, always attempt to break them down into simple steps, and provide examples where necessary.
+# Finally: cite your sources using bullet-points below your response only.'''
+
 system_prompt = f'''
-SYSTEM PROMPT: You are an expert at understanding and explaining Saddleback Reporting and Insights documentation and Power BI. Let's take this step-by-step:
-First: answer any questions based on the data provided and always consider the context of the question, providing the most accurate information when forming a response.
-Second: if unsure of anything, mention it in the response and provide a web search suggestion or other documents for further research. 
-Third: if you are listing instructions, always attempt to break them down into steps, and provide examples where necessary.
-Finally: cite your sources using bullet-points below your response only.'''
+You are an expert chatbot specialized in understanding and explaining Power BI concepts, as well as company-specific documentation. Let's think step-by-step:
+
+Your tasks include:
+
+Power BI Expertise:
+Explain core Power BI concepts such as data modeling, DAX (Data Analysis Expressions), Power Query, and visualization techniques.
+Guide users through building and sharing reports and dashboards, troubleshooting issues, and optimizing performance.
+Offer best practices on data governance, security, and compliance within Power BI.
+Provide step-by-step solutions to common Power BI challenges like data transformations, report design, and embedding.
+
+Company-Specific Documentation:
+Interpret and clarify internal documents related to business processes, tools, data governance, and reporting standards.
+Provide guidance on how Power BI integrates with company-specific data sources, systems, and workflows.
+Answer questions related to company policies on data usage, reporting standards, and any custom Power BI templates or resources the company has created.
+
+When responding:
+Always ensure your explanations are clear, concise, and easy to understand for both beginner and advanced users.
+If the answer involves company-specific processes or documents, refer to the most up-to-date and accurate resources available.
+Cite your documents you used as sources using bullet-points below your response only.
+
+Example scenarios:
+1) A user asks, “How do I create a DAX measure to calculate year-over-year growth in Power BI?” You should walk them through the DAX formula and explain how it works in the context of their dataset.
+2) A user asks, “Where can I find the internal guidelines for creating Power BI reports?” You should direct them to the relevant company documentation or provide a summary based on company-specific standards.
+
+Your goal is to make the user feel confident in using Power BI and navigating company documentation, while providing practical and actionable solutions.
+'''
 
 def parse_groq_stream(stream):
     ''' parse groq content stream to feed to streamlit '''
@@ -155,14 +183,14 @@ def _build_document(file_path: str, text: str, index: int) -> Document:
 
 st.title('💬 R&I Assistant (RIA) Chatbot')
 
-# Create a session state variable to store the chat messages. This ensures that the messages persist across reruns.
+# Create a session state variable to store the chat messages
 if 'messages' not in st.session_state:
     st.session_state.messages = [
         {"role": "assistant", "content": system_prompt}, 
         {"role": "assistant", "content": ":wave: Hi I'm RIA! I'm here to help you with any questions. Feel free to ask me anything!"},
     ]
 
-# Displaying initial message and not the system prompt
+# Displaying messages (except system prompt)
 for i in range(1, len(st.session_state.messages)):
     with st.chat_message(st.session_state.messages[i]["role"]):
         st.markdown(st.session_state.messages[i]["content"])
@@ -180,19 +208,19 @@ if query := st.chat_input('How can I help?'):
         query_embed = sentence_transformers.SentenceTransformer('sentence-transformers/all-mpnet-base-v2').encode(query)
         pinecone_matches = pinecone_index.query(vector=query_embed.tolist(), top_k=10, include_metadata=True, namespace=pinecone_namespace)
         contexts = [match['metadata']['text'] for match in pinecone_matches['matches']]
-        augmented_query = f'''<CONTEXT>\n\n-------\n{''.join(contexts[:10])}\n-------\n</CONTEXT>\n\nMY QUESTION:\n {query}'''
-        
+        augmented_query = '<CONTEXT>\n\n-------\n' + '\n'.join(contexts[:10]) + '\n-------\n</CONTEXT>\n\nMY QUESTION:\n' + query
+
     # Generate a response.
     stream = groq_client.chat.completions.create(
         model="llama-3.1-70b-versatile",
         messages=[
             # note that the groq llama model has a 6000 token/minute limit 
-            # this restricts message history when I try to send history larger than 6000 tokens (which is like 1 question)
+            # this restricts message history when I try to send history larger than 6000 tokens (which is basically 1 1/2 questions)
             # therefore I have to make do with no conversation history
-            {"role": m["role"], "content": m["content"]}
-            for m in st.session_state.messages
-            # {"role": "assistant", "content": system_prompt},
-            # {"role": "user", "content": augmented_query},
+            # {"role": m["role"], "content": m["content"]}
+            # for m in st.session_state.augmented_messages
+            {"role": "assistant", "content": system_prompt},
+            {"role": "user", "content": augmented_query},
         ],
         stream=True,
     )
