@@ -36,13 +36,6 @@ pinecone_index = pinecone_client.Index(index_name)
 pinecone_namespace = ""
 vectorstore = PineconeVectorStore(index=pinecone_index, embedding=embeddings)
 
-# system_prompt = f'''
-# You are an expert at understanding and explaining Saddleback Reporting and Insights documentation and Power BI. Let's take this step-by-step:
-# First: answer any questions based on the data provided and always consider the context of the question, providing the most accurate information when forming a complete, but succinct response.
-# Second: if unsure of anything, mention it in the response and offer web search suggestions or file suggestions where appropriate. 
-# Third: if you are listing instructions, always attempt to break them down into simple steps, and provide examples where necessary.
-# Finally: cite your sources using bullet-points below your response only.'''
-
 system_prompt = f'''
 You are an expert chatbot specialized in understanding and explaining Power BI concepts, as well as company-specific documentation. Let's think step-by-step:
 
@@ -105,7 +98,47 @@ def rag_documents() -> None:
             print('completed upserting all docs')
 
         success = st.success('Documents updated successfully!')
-        time.sleep(2.5)
+        time.sleep(2)
+        success.empty()
+
+def rag_documents_drive(folder_url: str) -> None:
+    ''' gets a google drive folder url and uploads that folder to the pinecone database '''
+
+    # chosen arbitrarily - chunk size is how many characters to split the document into. some documents are too big to send to the AI all at once
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=100)
+
+    loader = GoogleDriveLoader(
+        folder_id=folder_url.split('/')[-1],
+    )
+
+    with st.sidebar:
+        with st.spinner('Updating documents...'):
+
+            dir_docs_ids, dir_docs = _process_directory(directory_path, text_splitter)
+            vectorstore.add_documents(documents=dir_docs, ids=dir_docs_ids)
+            print('upserting docs:', dir_docs_ids)
+
+            github_docs_ids, github_docs = _process_github(text_splitter)
+            vectorstore.add_documents(documents=github_docs, ids=github_docs_ids)
+            print('upserting docs:', github_docs_ids)
+
+            print('completed upserting all docs')
+
+        success = st.success('Documents updated successfully!')
+        time.sleep(2)
+        success.empty()
+
+def rag_documents_github() -> None:
+    ''' loads github documents and uploads them to the pinecone database '''
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=100)
+    with st.sidebar:
+        with st.spinner('Updating documents...'):
+            github_docs_ids, github_docs = _process_github(text_splitter)
+            vectorstore.add_documents(documents=github_docs, ids=github_docs_ids)
+            print('upserting docs:', github_docs_ids)
+
+        success = st.success('Documents updated successfully!')
+        time.sleep(2)
         success.empty()
 
 def _process_directory(directory_path: str, text_splitter: object) -> tuple:
@@ -128,8 +161,6 @@ def _process_directory(directory_path: str, text_splitter: object) -> tuple:
                 loader = CSVLoader(file_path)
             elif file.endswith('.md'):
                 loader = UnstructuredMarkdownLoader(file_path)
-            # elif files.endswith('.png'):
-            #   loader = UnstructuredImageLoader(file_path)
 
             if loader != None:
                 # directory loads documents one at a time
@@ -215,10 +246,8 @@ if query := st.chat_input('How can I help?'):
         model="llama-3.1-70b-versatile",
         messages=[
             # note that the groq llama model has a 6000 token/minute limit 
-            # this restricts message history when I try to send history larger than 6000 tokens (which is basically 1 1/2 questions)
+            # this restricts messages larger than 6000 tokens (which is basically 1 1/2 questions)
             # therefore I have to make do with no conversation history
-            # {"role": m["role"], "content": m["content"]}
-            # for m in st.session_state.augmented_messages
             {"role": "assistant", "content": system_prompt},
             {"role": "user", "content": augmented_query},
         ],
@@ -231,5 +260,7 @@ if query := st.chat_input('How can I help?'):
     st.session_state.messages.append({"role": "assistant", "content": response})
     
 with st.sidebar:
-    st.button('Update documents', on_click=lambda: rag_documents())
+    drive_folder_url = st.text_input('Google Drive Folder URL', 'https://drive.google.com/drive/folders/1cBoruJzjN1m8TmEtBeSjpZsxawNMRYfg')
+    st.button('Update Drive Documents', on_click=lambda: rag_documents_drive())
+    st.button('Update Github Documents', on_click=lambda: rag_documents_github())
     st.button('Clear chat', on_click=lambda: st.session_state.pop('messages', None))
