@@ -19,7 +19,7 @@ groq_client = groq.Groq(api_key=st.secrets["GROQ_API_KEY"])
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
 pinecone_client = Pinecone(api_key=st.secrets["PINECONE_API_KEY"])
 
-index_name = "ri-assist"
+index_name = "ri-assistant"
 pinecone_namespace = ""
 
 existing_indexes = [index_info["name"] for index_info in pinecone_client.list_indexes()]
