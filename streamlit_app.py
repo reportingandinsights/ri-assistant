@@ -1,9 +1,8 @@
-from langchain_community.document_loaders import UnstructuredImageLoader, GithubFileLoader, PyPDFLoader, UnstructuredExcelLoader, UnstructuredMarkdownLoader, Docx2txtLoader
+from langchain_community.document_loaders import TextLoader, GithubFileLoader, PyPDFLoader, Docx2txtLoader, UnstructuredExcelLoader, UnstructuredMarkdownLoader, UnstructuredXMLLoader
 from langchain_community.document_loaders.csv_loader import CSVLoader
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.schema import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-# from langchain_googledrive.document_loaders import GoogleDriveLoader
 from pinecone import Pinecone, ServerlessSpec
 from langchain_pinecone import PineconeVectorStore
 import sentence_transformers
@@ -11,6 +10,8 @@ import os
 import groq
 import streamlit as st
 import time
+import subprocess
+import tempfile
 
 
 ### Initializing Pinecone, Groq system prompt, and response streaming ###
@@ -82,20 +83,87 @@ def rag_documents(repo_name: str) -> None:
     repo_name (str): name of the github repo
     loads github documents and uploads them to the pinecone database 
     '''
+    github_url = f'https://github.com/reportingandinsights/{repo_name}'
+    github_PAC_url = f'https://{st.secrets["GITHUB_PERSONAL_ACCESS_TOKEN"]}@github.com/reportingandinsights/{repo_name}'
+
     with st.sidebar:
         try:
             with st.spinner('Updating documents...'):
-                ids, docs = _process_github(repo_name)
-                st.session_state.vectorstore.add_documents(documents=docs, ids=ids)
-                print('upserting docs:', ids)
+                # creating a temporary directory from the cloned github in order to load all documents
+                with tempfile.TemporaryDirectory() as temp_path:
+                    if _clone_github_repo(github_PAC_url, temp_path):
+                        ids, docs = _load_github_files(github_url, temp_path)
+                        print('upserting docs:', ids)
+                        st.session_state.vectorstore.add_documents(documents=docs, ids=ids)
+                        # print('loaded docs')
+                        # ids, docs = documents.items()
+                        # ids, docs = _process_github(repo_name)
+                        # st.session_state.vectorstore.add_documents(documents=docs, ids=ids)
+                        # print('upserting docs:', ids)
 
             success = st.success('Documents updated successfully!')
             time.sleep(2)
             success.empty()
-        except:
-            error = st.error('Error loading documents')
+        except Exception as e:
+            error = st.error(e)
             time.sleep(2)
             error.empty()
+
+def _clone_github_repo(github_url: str, temp_path: str) -> bool:
+    ''' 
+    clones a gitub repository to a temporary folder and returns the temp path
+    temp folder inspiration from https://github.com/cmooredev/RepoReader/tree/main/RepoReader 
+    '''
+    try:
+        subprocess.run(['git', 'clone', github_url, temp_path], check=True)
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to clone repository: {e}")
+        return False
+    
+def _load_github_files(github_url: str, temp_path: str) -> tuple:
+    ''' iterates over the cloned github repo and loads all files into a list of documents, returns a tuple of ids and docs '''
+    ids = []
+    docs = []
+    
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=3000, chunk_overlap=200)
+
+    for root, _, files in os.walk(temp_path):
+        for file in files:
+            file_path = os.path.join(root, file)
+            print(file_path)
+            
+            try:
+                loader = None
+                if file_path.endswith('.txt'):
+                    loader = TextLoader(file_path)
+                elif file_path.endswith('.md'):
+                    loader = UnstructuredMarkdownLoader(file_path)
+                elif file_path.endswith('.xml'):
+                    loader = UnstructuredXMLLoader(file_path)
+                elif file_path.endswith('.csv'):
+                    loader = CSVLoader(file_path)
+                elif file_path.endswith('.pdf'):
+                    loader = PyPDFLoader(file_path)
+                elif file_path.endswith(('docx', 'doc')):
+                    loader = Docx2txtLoader(file_path)
+                elif file_path.endswith(('xlsx', 'xls')):
+                    loader = UnstructuredExcelLoader(file_path)
+
+                if loader:
+                    # loader.load() returns a list, but this list only has one document because os.walk only gives it one element
+                    text = loader.load()[0].page_content
+                    for index, t in enumerate(text_splitter.split_text(text)):
+                        built_doc = _build_document(github_url + file + '/', t, index)
+                        file = file.replace(' ', '%20') # replacing spaces with %20 to make the url valid
+                        ids.append(github_url + file + '/')
+                        print(github_url + file + '/')
+                        docs.append(built_doc)
+
+            except Exception as e:
+                print(f'error loading {file_path}, error: {e}')
+    
+    return (ids, docs)
 
 def _process_github(repo_name: str) -> tuple:
     ''' creates Documents for all loaded files and returns a tuple of ids and data '''
@@ -108,13 +176,12 @@ def _process_github(repo_name: str) -> tuple:
         repo=f'reportingandinsights/{repo_name}',
         branch='main',
         access_token=os.getenv('GITHUB_PERSONAL_ACCESS_TOKEN'),
-        # file_filter=lambda file_path: file_path.endswith('.md') or file_path.endswith('.txt') or file_path.endswith('.xml'),
-        file_filter=lambda file_path: not (file_path.endswith('.png') or file_path.endswith('.jpg'))
+        file_filter=lambda file_path: file_path.endswith(('.md', '.txt', '.xml', '.docx', '.doc', '.xlsx'))
     )
 
     # github loads all documents as a list, so need to iterate through each document
     for gitdoc in loader.load():
-        file_path = f'https://github.com/reportingandinsights/{repo_name}/blob/main/{gitdoc.metadata['path']}'
+        file_path = f"https://github.com/reportingandinsights/{repo_name}/blob/main/{gitdoc.metadata['path'].replaceall(' ', '%20')}"
         split_text = text_splitter.split_text(gitdoc.page_content)
 
         for index, text in enumerate(split_text):
@@ -230,6 +297,3 @@ def confirm_delete_database() -> None:
     if st.button('Yes'):
         delete_database()
         st.rerun()
-
-
-# https://stackoverflow.com/questions/78303342/streamlit-button-on-click-how-to-use-it

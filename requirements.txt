@@ -6,8 +6,8 @@ langchain
 langchain-community 
 langchain-pinecone
 langchain-huggingface
-langchain-googledrive
 unstructured
 unstructured_inference
 sentence-transformers
+markdown
 streamlit
