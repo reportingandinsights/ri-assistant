@@ -81,21 +81,21 @@ def rag_documents_folder(internal_folder_path: str) -> None:
     ''' loads documents from a folder and uploads them to the pinecone database '''
 
     # chosen arbitrarily - chunk size is how many characters to split the document into. some documents are too big to send to the AI all at once
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=100)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=150)
 
     with st.sidebar:
-        with st.spinner('Updating documents...'):
-            try:                
+        try:                
+            with st.spinner('Updating documents...'):
                 dir_docs_ids, dir_docs = _process_directory(internal_folder_path, text_splitter)
                 st.session_state.vectorstore.add_documents(documents=dir_docs, ids=dir_docs_ids)
                 print('upserting docs:', dir_docs_ids)
                 success = st.success('Documents updated successfully!')
                 time.sleep(2)
                 success.empty()
-            except:
-                error = st.error('Not an folder')
-                time.sleep(2)
-                error.empty()
+        except:
+            error = st.error('Not an folder')
+            time.sleep(2)
+            error.empty()
         
 # def rag_documents_drive(folder_url: str) -> None:
 #     ''' gets a google drive folder url and uploads that folder to the pinecone database '''
@@ -118,14 +118,19 @@ def rag_documents_github() -> None:
     ''' loads github documents and uploads them to the pinecone database '''
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=100)
     with st.sidebar:
-        with st.spinner('Updating documents...'):
-            github_docs_ids, github_docs = _process_github(text_splitter)
-            st.session_state.vectorstore.add_documents(documents=github_docs, ids=github_docs_ids)
-            print('upserting docs:', github_docs_ids)
+        try:
+            with st.spinner('Updating documents...'):
+                github_docs_ids, github_docs = _process_github(text_splitter)
+                st.session_state.vectorstore.add_documents(documents=github_docs, ids=github_docs_ids)
+                print('upserting docs:', github_docs_ids)
 
-        success = st.success('Documents updated successfully!')
-        time.sleep(2)
-        success.empty()
+            success = st.success('Documents updated successfully!')
+            time.sleep(2)
+            success.empty()
+        except:
+            error = st.error('Error loading documents')
+            time.sleep(2)
+            error.empty()
 
 def _process_directory(directory_path: str, text_splitter: object) -> tuple:
     ''' resursively processes all files in a directory returns a tuple of ids and data '''
@@ -199,23 +204,50 @@ def _build_document(file_path: str, text: str, index: int) -> Document:
         page_content=f'Source: {file_path}\n{text}'
     )
 
-def clear_database() -> None:
+def delete_database() -> None:
     ''' delete and recreate an empty pinecone index '''
-    pinecone_client.delete_index(index_name)
-    time.sleep(4)
-    existing_indexes = [index_info["name"] for index_info in pinecone_client.list_indexes()]
-    if index_name not in existing_indexes:
-        pinecone_client.create_index(
-            name=index_name,
-            dimension=768,
-            metric="cosine",
-            spec=ServerlessSpec(cloud="aws", region="us-east-1"),
-        )
-        while not pinecone_client.describe_index(index_name).status["ready"]:
-            time.sleep(1)
+    print('deleting and recreating index')
+    try:
+        with st.spinner('Deleting database...'):
+            pinecone_client.delete_index(index_name)
+            existing_indexes = [index_info["name"] for index_info in pinecone_client.list_indexes()]
+            if index_name not in existing_indexes:
+                pinecone_client.create_index(
+                    name=index_name,
+                    dimension=768,
+                    metric="cosine",
+                    spec=ServerlessSpec(cloud="aws", region="us-east-1"),
+                )
+                while not pinecone_client.describe_index(index_name).status["ready"]:
+                    time.sleep(1)
 
-    pinecone_index = pinecone_client.Index(index_name)
-    st.session_state.vectorstore = PineconeVectorStore(index=pinecone_index, embedding=embeddings)
+            pinecone_index = pinecone_client.Index(index_name)
+            st.session_state.vectorstore = PineconeVectorStore(index=pinecone_index, embedding=embeddings)
+        success = st.success('Database deleted successfully!')
+        time.sleep(2)
+        success.empty()
+    except:
+        error = st.error('Error deleting database')
+        time.sleep(2)
+        error.empty()
+
+def delete_database_folder(folder_path: str) -> None:
+    ''' delete all documents in a folder from the pinecone database '''
+    print('deleting folder documents')
+    with st.sidebar:
+        try:
+            with st.spinner('Deleting documents...'):
+                documents = st.session_state.vectorstore.get_documents()
+                for doc in documents:
+                    if folder_path in doc.metadata['source']:
+                        st.session_state.vectorstore.delete_document(doc.id)
+            success = st.success('Documents deleted successfully!')
+            time.sleep(2)
+            success.empty()
+        except:
+            error = st.error('Error deleting documents')
+            time.sleep(2)
+            error.empty()
 
 ### Streamlit App ###
 
@@ -268,20 +300,36 @@ if query := st.chat_input('How can I help?'):
     
 with st.sidebar:
     # drive_folder_url = st.text_input('Google Drive Folder URL', 'https://drive.google.com/drive/folders/1cBoruJzjN1m8TmEtBeSjpZsxawNMRYfg')
-    internal_folder_path = st.text_input('Local Folder Path', './r&i_assistant_docs/00_Dictionary Files')
-    st.button('Update Folder Documents', on_click=lambda: rag_documents_folder(internal_folder_path))
+    st.write('Update Document Options')
+    folder_path_to_update = st.text_input('Github Folder Path to Add Documents', './documents/00_Azure DevOps')
+    st.button('Update Folder Documents', on_click=lambda: rag_documents_folder(folder_path_to_update))
     st.button('Update Github Documents', on_click=lambda: rag_documents_github())
-    st.button('Clear chat', on_click=lambda: st.session_state.pop('messages', None))
-    st.button('Clear database', on_click=lambda: confirm_clear_database())
+
+    st.write('Delete Options')
+    folder_path_to_delete = st.text_input('Github Folder Path to Delete Documents', './documents/00_Azure DevOps')
+    st.button('Delete Database Folder', on_click=lambda: confirm_delete_folder(folder_path_to_delete))
+    st.button('Delete Pinecone Database', on_click=lambda: confirm_delete_database())
+    st.button('Delete Chat', on_click=lambda: st.session_state.pop('messages', None))
+
 
 ### Confirmation Modals
 
-@st.dialog('Clear Database')
-def confirm_clear_database():
-    st.warning('Are you sure you want to clear the database of all documents?', icon='⚠️')
-    st.write('You will have to re-upload all documents to the database.')
+@st.dialog('Delete Database')
+def confirm_delete_database() -> None:
+    st.warning('Are you sure you want to delete all the documents in the Pinecone database?', icon='⚠️')
+    st.write('You will have to update all documents again! This action is irreversible.')
     if st.button('Yes'):
-        clear_database()
+        delete_database()
+        st.rerun()
+    if st.button('No'):
+        st.rerun()
+
+@st.dialog('Delete Folder Documents')
+def confirm_delete_folder(folder_path_to_delete: str) -> None:
+    st.warning('Are you sure you want to delete all the folder in the Pinecone database?', icon='⚠️')
+    st.write('You will have to update this folder again! This action is irreversible.')
+    if st.button('Yes'):
+        delete_database_folder(folder_path_to_delete)
         st.rerun()
     if st.button('No'):
         st.rerun()
