@@ -76,53 +76,18 @@ def parse_groq_stream(stream):
             print(f"Error: {e}")
 
 ### RAG Document Loading to Pinecone ###
-
-def rag_documents_folder(internal_folder_path: str) -> None:
-    ''' loads documents from a folder and uploads them to the pinecone database '''
-
-    # chosen arbitrarily - chunk size is how many characters to split the document into. some documents are too big to send to the AI all at once
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=150)
-
-    with st.sidebar:
-        try:                
-            with st.spinner('Updating documents...'):
-                dir_docs_ids, dir_docs = _process_directory(internal_folder_path, text_splitter)
-                st.session_state.vectorstore.add_documents(documents=dir_docs, ids=dir_docs_ids)
-                print('upserting docs:', dir_docs_ids)
-                success = st.success('Documents updated successfully!')
-                time.sleep(2)
-                success.empty()
-        except:
-            error = st.error('Not an folder')
-            time.sleep(2)
-            error.empty()
         
-# def rag_documents_drive(folder_url: str) -> None:
-#     ''' gets a google drive folder url and uploads that folder to the pinecone database '''
-
-#     # chosen arbitrarily - chunk size is how many characters to split the document into. some documents are too big to send to the AI all at once
-#     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=100)
-
-#     loader = GoogleDriveLoader(
-#         folder_id=folder_url.split('/')[-1],
-#     )
-
-#     with st.sidebar:
-#         with st.spinner('Updating documents...'):
-
-#         success = st.success('Documents updated successfully!')
-#         time.sleep(2)
-#         success.empty()
-
-def rag_documents_github() -> None:
-    ''' loads github documents and uploads them to the pinecone database '''
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=100)
+def rag_documents(repo_name: str) -> None:
+    ''' 
+    repo_name (str): name of the github repo
+    loads github documents and uploads them to the pinecone database 
+    '''
     with st.sidebar:
         try:
             with st.spinner('Updating documents...'):
-                github_docs_ids, github_docs = _process_github(text_splitter)
-                st.session_state.vectorstore.add_documents(documents=github_docs, ids=github_docs_ids)
-                print('upserting docs:', github_docs_ids)
+                ids, docs = _process_github(repo_name)
+                st.session_state.vectorstore.add_documents(documents=docs, ids=ids)
+                print('upserting docs:', ids)
 
             success = st.success('Documents updated successfully!')
             time.sleep(2)
@@ -132,58 +97,24 @@ def rag_documents_github() -> None:
             time.sleep(2)
             error.empty()
 
-def _process_directory(directory_path: str, text_splitter: object) -> tuple:
-    ''' resursively processes all files in a directory returns a tuple of ids and data '''
-    ids = []
-    data = []
+def _process_github(repo_name: str) -> tuple:
+    ''' creates Documents for all loaded files and returns a tuple of ids and data '''
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=100)
 
-    for root, _, files in os.walk(directory_path):
-        if not os.path.isdir(directory_path):
-            raise ValueError
-        
-        for file in files:
-            file_path = os.path.join(root, file)
-            
-            loader = None
-            if file.endswith('.pdf'):
-                loader = PyPDFLoader(file_path)
-            elif file.endswith('.docx'):
-                loader = Docx2txtLoader(file_path)
-            elif file.endswith('.xlsx'):
-                loader = UnstructuredExcelLoader(file_path)
-            elif file.endswith('.csv'):
-                loader = CSVLoader(file_path)
-            elif file.endswith('.md'):
-                loader = UnstructuredMarkdownLoader(file_path)
-
-            if loader != None:
-                # directory loads documents one at a time
-                text = loader.load()[0].page_content # gets a string of text from the file
-                split_text = text_splitter.split_text(text)
-
-                for index, t in enumerate(split_text):
-                    built_dir_doc = _build_document(file_path, t, index)
-                    ids.append(built_dir_doc.id)
-                    data.append(built_dir_doc)
-                    print('loading:', file_path)
-
-    return (ids, data)
-    
-def _process_github(text_splitter: object) -> tuple:
-    ''' creates Documents for all files in reportingandinsights common-code github repo, returns a tuple of ids and data '''
     ids = []
     data = []
 
     loader = GithubFileLoader(
-        repo='reportingandinsights/common-code',
+        repo=f'reportingandinsights/{repo_name}',
         branch='main',
         access_token=os.getenv('GITHUB_PERSONAL_ACCESS_TOKEN'),
-        file_filter=lambda file_path: file_path.endswith('.md') or file_path.endswith('.txt') or file_path.endswith('.xml'),
+        # file_filter=lambda file_path: file_path.endswith('.md') or file_path.endswith('.txt') or file_path.endswith('.xml'),
+        file_filter=lambda file_path: not (file_path.endswith('.png') or file_path.endswith('.jpg'))
     )
 
     # github loads all documents as a list, so need to iterate through each document
     for gitdoc in loader.load():
-        file_path = 'https://github.com/reportingandinsights/common-code/blob/main/' + gitdoc.metadata['path']
+        file_path = f'https://github.com/reportingandinsights/{repo_name}/blob/main/{gitdoc.metadata['path']}'
         split_text = text_splitter.split_text(gitdoc.page_content)
 
         for index, text in enumerate(split_text):
@@ -231,23 +162,6 @@ def delete_database() -> None:
         time.sleep(2)
         error.empty()
 
-def delete_database_folder(folder_path: str) -> None:
-    ''' delete all documents in a folder from the pinecone database '''
-    print('deleting folder documents')
-    with st.sidebar:
-        try:
-            with st.spinner('Deleting documents...'):
-                documents = st.session_state.vectorstore.get_documents()
-                for doc in documents:
-                    if folder_path in doc.metadata['source']:
-                        st.session_state.vectorstore.delete_document(doc.id)
-            success = st.success('Documents deleted successfully!')
-            time.sleep(2)
-            success.empty()
-        except:
-            error = st.error('Error deleting documents')
-            time.sleep(2)
-            error.empty()
 
 ### Streamlit App ###
 
@@ -299,17 +213,12 @@ if query := st.chat_input('How can I help?'):
     st.session_state.messages.append({"role": "assistant", "content": response})
     
 with st.sidebar:
-    # drive_folder_url = st.text_input('Google Drive Folder URL', 'https://drive.google.com/drive/folders/1cBoruJzjN1m8TmEtBeSjpZsxawNMRYfg')
-    st.write('Update Document Options')
-    folder_path_to_update = st.text_input('Github Folder Path to Add Documents', './documents/00_Azure DevOps')
-    st.button('Update Folder Documents', on_click=lambda: rag_documents_folder(folder_path_to_update))
-    st.button('Update Github Documents', on_click=lambda: rag_documents_github())
+    st.subheader('Update Document Options')
+    st.button('Update Google Drive Documents', on_click=lambda: rag_documents('ri-assistant'))
+    st.button('Update Common-Code Documents', on_click=lambda: rag_documents('common-code'))
 
-    st.write('Delete Options')
-    folder_path_to_delete = st.text_input('Github Folder Path to Delete Documents', './documents/00_Azure DevOps')
-    st.button('Delete Database Folder', on_click=lambda: confirm_delete_folder(folder_path_to_delete))
+    st.subheader('Delete Options')
     st.button('Delete Pinecone Database', on_click=lambda: confirm_delete_database())
-    st.button('Delete Chat', on_click=lambda: st.session_state.pop('messages', None))
 
 
 ### Confirmation Modals
@@ -321,17 +230,6 @@ def confirm_delete_database() -> None:
     if st.button('Yes'):
         delete_database()
         st.rerun()
-    if st.button('No'):
-        st.rerun()
 
-@st.dialog('Delete Folder Documents')
-def confirm_delete_folder(folder_path_to_delete: str) -> None:
-    st.warning('Are you sure you want to delete all the folder in the Pinecone database?', icon='⚠️')
-    st.write('You will have to update this folder again! This action is irreversible.')
-    if st.button('Yes'):
-        delete_database_folder(folder_path_to_delete)
-        st.rerun()
-    if st.button('No'):
-        st.rerun()
 
 # https://stackoverflow.com/questions/78303342/streamlit-button-on-click-how-to-use-it
