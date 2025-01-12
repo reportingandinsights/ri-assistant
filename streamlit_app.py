@@ -282,7 +282,7 @@ if query := st.chat_input('How can I help?'):
     
 with st.sidebar:
     st.subheader('Update Document Options')
-    st.button('Update Google Drive Documents', on_click=lambda: rag_documents('ri-assistant'))
+    st.button('Update Google Drive Documents', on_click=lambda: rag_documents('google-drive-docs'))
     st.button('Update Common-Code Documents', on_click=lambda: rag_documents('common-code'))
 
     st.subheader('Delete Options')
