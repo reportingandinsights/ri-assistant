@@ -176,8 +176,10 @@ def delete_database() -> None:
     print('deleting and recreating index')
     try:
         with st.spinner('Deleting database...'):
+            print('deleting index')
             pinecone_client.delete_index(index_name)
             existing_indexes = [index_info["name"] for index_info in pinecone_client.list_indexes()]
+            print('existing indecies: ', existing_indexes)
             if index_name not in existing_indexes:
                 pinecone_client.create_index(
                     name=index_name,
@@ -190,6 +192,8 @@ def delete_database() -> None:
 
             pinecone_index = pinecone_client.Index(index_name)
             st.session_state.vectorstore = PineconeVectorStore(index=pinecone_index, embedding=embeddings)
+            print('created vectorstore')
+            
         success = st.success('Database deleted successfully!')
         time.sleep(2)
         success.empty()
