@@ -1,43 +1,40 @@
-from langchain_community.document_loaders import TextLoader, GithubFileLoader, PyPDFLoader, Docx2txtLoader, UnstructuredExcelLoader, UnstructuredMarkdownLoader, UnstructuredXMLLoader
+### R&I Assistant Chatbot ###
+# created by Andrew Shiroma to accelerate intern and volunteer onboarding
+# uses Langchain and Pinecone to vectorize documents and uses Groq's Llama model to generate responses to user questions 
+
+
+### Imports ###
+
+# langchain document loaders
+from langchain_community.document_loaders import TextLoader, PyPDFLoader, Docx2txtLoader, UnstructuredExcelLoader, UnstructuredMarkdownLoader, UnstructuredXMLLoader
 from langchain_community.document_loaders.csv_loader import CSVLoader
+
+# langchain document manipulation - embeddings, text splitters 
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain.schema import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain.schema import Document
+
+# pinecone and vector storing
 from pinecone import Pinecone, ServerlessSpec
 from langchain_pinecone import PineconeVectorStore
 import sentence_transformers
+
+# operations
 import os
-import groq
-import streamlit as st
 import time
 import subprocess
 import tempfile
 
+# web app
+import streamlit as st
 
-### Initializing Pinecone, Groq system prompt, and response streaming ###
+# AI model
+import groq
+
+
+### Initializing Groq ###
 
 groq_client = groq.Groq(api_key=st.secrets["GROQ_API_KEY"])
-embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
-pinecone_client = Pinecone(api_key=st.secrets["PINECONE_API_KEY"])
-
-index_name = "ri-assistant"
-pinecone_namespace = ""
-
-# every time streamlit reruns, recreates pinecone index if inecessary
-existing_indexes = [index_info["name"] for index_info in pinecone_client.list_indexes()]
-if index_name not in existing_indexes:
-    print('creating new pinecone index')
-    pinecone_client.create_index(
-        name=index_name,
-        dimension=768,
-        metric="cosine",
-        spec=ServerlessSpec(cloud="aws", region="us-east-1"),
-    )
-    while not pinecone_client.describe_index(index_name).status["ready"]:
-        time.sleep(1)
-
-pinecone_index = pinecone_client.Index(index_name)
-st.session_state.vectorstore = PineconeVectorStore(index=pinecone_index, embedding=embeddings)
 
 system_prompt = f'''
 You are an expert chatbot specialized in understanding and explaining Power BI concepts, as well as company-specific documentation. Let's think step-by-step:
@@ -67,8 +64,8 @@ Example scenarios:
 Your goal is to make the user feel confident in using Power BI and navigating company documentation, while providing practical and actionable solutions.
 '''
 
-def parse_groq_stream(stream):
-    ''' parse groq content stream to feed to streamlit '''
+def parse_groq_stream(stream: object) -> None:
+    ''' parse groq content stream to feed to streamlit chat write '''
     for chunk in stream:
         try:
             if chunk.choices:
@@ -77,6 +74,33 @@ def parse_groq_stream(stream):
         except Exception as e:
             st.session_state.messages.append({"role": "assistant", "content": f"Sorry, there's been an error: {e}. Please try again."})
             print(f"Error: {e}")
+
+
+### Initializing Pinecone ###
+
+# this embedding generates a 768-dimension vector describing the semantic meaning of the text
+embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
+pinecone_client = Pinecone(api_key=st.secrets["PINECONE_API_KEY"])
+
+index_name = "ri-assistant"
+pinecone_namespace = ""
+
+# every time streamlit reruns, creates pinecone index if inecessary
+existing_indexes = [index_info["name"] for index_info in pinecone_client.list_indexes()]
+if index_name not in existing_indexes:
+    print('creating new pinecone index')
+    pinecone_client.create_index(
+        name=index_name,
+        dimension=768, # index dimensions must match embeddings
+        metric="cosine",
+        spec=ServerlessSpec(cloud="aws", region="us-east-1"), # these are the free pinecone options
+    )
+    while not pinecone_client.describe_index(index_name).status["ready"]:
+        time.sleep(1)
+
+pinecone_index = pinecone_client.Index(index_name)
+st.session_state.vectorstore = PineconeVectorStore(index=pinecone_index, embedding=embeddings)
+
 
 ### RAG Document Loading to Pinecone ###
         
@@ -124,11 +148,13 @@ def _load_github_files(github_url: str, temp_path: str) -> tuple:
     
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=3000, chunk_overlap=200)
 
-    for root, folders, files in os.walk(temp_path):
-        # get path from root and remove the temp folder from the path
+    for root, _, files in os.walk(temp_path):
+        # get path from root and remove the temp folders from the path
         # this is used to build the github url
         github_path = '/'.join(root.split(os.sep)[3:])
         github_path = github_path.replace(' ', '%20') # replacing spaces with %20 to make the https url valid
+
+        # iterate over all files and extract text
         for file in files:
             file_path = os.path.join(root, file)
             try:
@@ -151,20 +177,24 @@ def _load_github_files(github_url: str, temp_path: str) -> tuple:
                 if loader:
                     # loader.load() returns a list, but this list only has one document because os.walk only gives it one element
                     text = loader.load()[0].page_content
+
+                    # some text is too large to give to Groq, so need to split text into chunks 
                     for index, t in enumerate(text_splitter.split_text(text)):
-                        file = file.replace(' ', '%20') # doing this now b/c need to keep spaces for temp directory file path while loading 
-                        if github_path == '':
+                        file = file.replace(' ', '%20')
+
+                        if github_path == '': # if the file is in the root directory
                             github_complete_path = f'{github_url}/blob/main/{file}'
-                        else:
+                        else: # if the file is in a subdirectory
                             github_complete_path = f'{github_url}/blob/main/{github_path}/{file}'
-                        # print(github_complete_path)
+
                         built_doc = _build_document(github_complete_path, t, index)
                         ids.append(github_complete_path)
-                        print('loading:', github_complete_path)
                         docs.append(built_doc)
+                        print('loading:', github_complete_path)
 
             except Exception as e:
                 print(f'error loading {file_path}, error: {e}')
+
     return (ids, docs)
 
 def _build_document(file_path: str, text: str, index: int) -> Document:
@@ -186,6 +216,18 @@ def delete_database() -> None:
     success = st.success('Database deleted successfully!')
     time.sleep(2)
     success.empty()
+
+
+### Confirmation Modals
+
+@st.dialog('Delete Database')
+def confirm_delete_database() -> None:
+    st.warning('Are you sure you want to delete all the documents in the Pinecone database?', icon='⚠️')
+    st.write('You will have to update all documents again! This action is irreversible.')
+    if st.button('Yes'):
+        delete_database()
+        st.rerun()
+
 
 ### Streamlit App ###
 
@@ -244,14 +286,3 @@ with st.sidebar:
     st.subheader('Delete Options')
     st.button('Delete Pinecone Database', on_click=lambda: confirm_delete_database())
     st.button('Clear Chat History', on_click=lambda: st.session_state.pop('messages', None))
-
-
-### Confirmation Modals
-
-@st.dialog('Delete Database')
-def confirm_delete_database() -> None:
-    st.warning('Are you sure you want to delete all the documents in the Pinecone database?', icon='⚠️')
-    st.write('You will have to update all documents again! This action is irreversible.')
-    if st.button('Yes'):
-        delete_database()
-        st.rerun()
