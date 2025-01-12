@@ -1,6 +1,6 @@
 # Knowledge Transfer for 💬 RIA
 
-This guide will give a walkthrough of services and important codebase snippets used to power RIA for future maintenance, starting from the services that the client would see down to the actual code.
+This guide will give a walkthrough of services and important codebase snippets used to power RIA for future maintenance.
 
 ## ⌨️ Development
 This section will walk through how to get the code and install software dependencies from the Github repository.
@@ -51,6 +51,13 @@ Each service except Streamlit requires some sort of key to access the resources.
 Login through the Streamlit-Github SSO using the reporting and insights email.
 
 Streamlit will automatically update the app when new changes are pushed to this project's Github repository main branch.
+
+Note that while this Github repo and Streamlit app is public, Streamlit app usage is restricted to certain users. To change user access:
+1) Go to the [Streamlit app dashboard](https://share.streamlit.io/)
+2) Click the three vertical dots on the right
+3) Go to Settings > Sharing
+4) Set "Who can view this app" to "Only specific people can view this app"
+5) Add or delete user emails as necessary 
 
 ### 🤖 Groq
 [Groq](https://groq.com/) is a free large language model provider that this chat app uses to understand and respond to the user's questions.
@@ -103,7 +110,7 @@ Pinecone also uses an API key to access the database, with a near identical proc
    ```
 
 ### 📝 Document Storage: Github
-This [Github repo](https://github.com/reportingandinsights/common-code) stores unorganized code snippets from various reports that are helpful to reuse. The folder documents in this repository stores all of the Google Drive documentation. The chatbot uses all the files in this repository for its data.
+The [Common Code repo](https://github.com/reportingandinsights/common-code) stores unorganized code snippets from various reports that are helpful to reuse. The folder documents in the [Google Drive Docs repo](https://github.com/reportingandinsights/google-drive-docs) stores all of the Google Drive documentation. These two repositories are private so no information is exposed.
 
 Login using the reporting and insights email.
 
