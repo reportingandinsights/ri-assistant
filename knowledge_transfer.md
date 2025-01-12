@@ -35,6 +35,8 @@ This section will walk through how to get the code and install software dependen
    $ streamlit run streamlit_app.py
    ```
 
+Additionally, the "Manage app" sidebar on the right side of the cloud deployment contains helpful print statements to help future debugging.
+
 ## 🍽️ Services
 1) 🚀 Deployment: Streamlit
 2) 🤖 AI: Groq

@@ -23,8 +23,10 @@ pinecone_client = Pinecone(api_key=st.secrets["PINECONE_API_KEY"])
 index_name = "ri-assistant"
 pinecone_namespace = ""
 
+# every time streamlit reruns, recreates pinecone index if inecessary
 existing_indexes = [index_info["name"] for index_info in pinecone_client.list_indexes()]
 if index_name not in existing_indexes:
+    print('creating new pinecone index')
     pinecone_client.create_index(
         name=index_name,
         dimension=768,
@@ -93,9 +95,7 @@ def rag_documents(repo_name: str) -> None:
                 with tempfile.TemporaryDirectory() as temp_path:
                     if _clone_github_repo(github_PAC_url, temp_path):
                         ids, docs = _load_github_files(github_url, temp_path)
-                        print('upserting docs:', ids)
                         st.session_state.vectorstore.add_documents(documents=docs, ids=ids)
-
 
             success = st.success('Documents updated successfully!')
             time.sleep(2)
@@ -124,11 +124,13 @@ def _load_github_files(github_url: str, temp_path: str) -> tuple:
     
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=3000, chunk_overlap=200)
 
-    for root, _, files in os.walk(temp_path):
+    for root, folders, files in os.walk(temp_path):
+        # get path from root and remove the temp folder from the path
+        # this is used to build the github url
+        github_path = '/'.join(root.split(os.sep)[3:])
+
         for file in files:
             file_path = os.path.join(root, file)
-            print(file_path)
-            
             try:
                 loader = None
                 if file_path.endswith('.txt'):
@@ -150,15 +152,16 @@ def _load_github_files(github_url: str, temp_path: str) -> tuple:
                     # loader.load() returns a list, but this list only has one document because os.walk only gives it one element
                     text = loader.load()[0].page_content
                     for index, t in enumerate(text_splitter.split_text(text)):
-                        built_doc = _build_document(github_url + '/' + file, t, index)
                         file = file.replace(' ', '%20') # replacing spaces with %20 to make the url valid
-                        ids.append(github_url + '/' + file)
-                        print('loading:', github_url + '/' + file)
+                        github_complete_path = f'{github_url}/{github_path}/{file}'
+                        built_doc = _build_document(github_complete_path, t, index)
+                        ids.append(github_complete_path)
+                        print('loading:', github_complete_path)
                         docs.append(built_doc)
 
             except Exception as e:
                 print(f'error loading {file_path}, error: {e}')
-    
+                
     return (ids, docs)
 
 def _build_document(file_path: str, text: str, index: int) -> Document:
@@ -173,35 +176,28 @@ def _build_document(file_path: str, text: str, index: int) -> Document:
 
 def delete_database() -> None:
     ''' delete and recreate an empty pinecone index '''
-    print('deleting and recreating index')
-    try:
-        with st.spinner('Deleting database...'):
-            print('deleting index')
-            pinecone_client.delete_index(index_name)
-            existing_indexes = [index_info["name"] for index_info in pinecone_client.list_indexes()]
-            print('existing indecies: ', existing_indexes)
-            if index_name not in existing_indexes:
-                pinecone_client.create_index(
-                    name=index_name,
-                    dimension=768,
-                    metric="cosine",
-                    spec=ServerlessSpec(cloud="aws", region="us-east-1"),
-                )
-                while not pinecone_client.describe_index(index_name).status["ready"]:
-                    time.sleep(1)
+    print('deleting index')
+    with st.spinner('Deleting database...'):
+        pinecone_client.delete_index(index_name)
+            # existing_indexes = [index_info["name"] for index_info in pinecone_client.list_indexes()]
+            # print('existing indecies: ', existing_indexes)
+            # if index_name not in existing_indexes:
+            #     pinecone_client.create_index(
+            #         name=index_name,
+            #         dimension=768,
+            #         metric="cosine",
+            #         spec=ServerlessSpec(cloud="aws", region="us-east-1"),
+            #     )
+            #     while not pinecone_client.describe_index(index_name).status["ready"]:
+            #         time.sleep(1)
 
-            pinecone_index = pinecone_client.Index(index_name)
-            st.session_state.vectorstore = PineconeVectorStore(index=pinecone_index, embedding=embeddings)
-            print('created vectorstore')
-            
-        success = st.success('Database deleted successfully!')
-        time.sleep(2)
-        success.empty()
-    except:
-        error = st.error('Error deleting database')
-        time.sleep(2)
-        error.empty()
+            # pinecone_index = pinecone_client.Index(index_name)
+            # st.session_state.vectorstore = PineconeVectorStore(index=pinecone_index, embedding=embeddings)
+            # print('created vectorstore')
 
+    success = st.success('Database deleted successfully!')
+    time.sleep(2)
+    success.empty()
 
 ### Streamlit App ###
 
