@@ -128,7 +128,7 @@ def _load_github_files(github_url: str, temp_path: str) -> tuple:
         # get path from root and remove the temp folder from the path
         # this is used to build the github url
         github_path = '/'.join(root.split(os.sep)[3:])
-
+        github_path = github_path.replace(' ', '%20') # replacing spaces with %20 to make the https url valid
         for file in files:
             file_path = os.path.join(root, file)
             try:
@@ -152,8 +152,12 @@ def _load_github_files(github_url: str, temp_path: str) -> tuple:
                     # loader.load() returns a list, but this list only has one document because os.walk only gives it one element
                     text = loader.load()[0].page_content
                     for index, t in enumerate(text_splitter.split_text(text)):
-                        file = file.replace(' ', '%20') # replacing spaces with %20 to make the url valid
-                        github_complete_path = f'{github_url}/{github_path}/{file}'
+                        file = file.replace(' ', '%20') # doing this now b/c need to keep spaces for temp directory file path while loading 
+                        if github_path == '':
+                            github_complete_path = f'{github_url}/blob/main/{file}'
+                        else:
+                            github_complete_path = f'{github_url}/blob/main/{github_path}/{file}'
+                        # print(github_complete_path)
                         built_doc = _build_document(github_complete_path, t, index)
                         ids.append(github_complete_path)
                         print('loading:', github_complete_path)
@@ -161,8 +165,8 @@ def _load_github_files(github_url: str, temp_path: str) -> tuple:
 
             except Exception as e:
                 print(f'error loading {file_path}, error: {e}')
-                
-    return (ids, docs)
+    return
+    # return (ids, docs)
 
 def _build_document(file_path: str, text: str, index: int) -> Document:
     ''' create a Document object with id, metadata, and page content '''
@@ -179,21 +183,6 @@ def delete_database() -> None:
     print('deleting index')
     with st.spinner('Deleting database...'):
         pinecone_client.delete_index(index_name)
-            # existing_indexes = [index_info["name"] for index_info in pinecone_client.list_indexes()]
-            # print('existing indecies: ', existing_indexes)
-            # if index_name not in existing_indexes:
-            #     pinecone_client.create_index(
-            #         name=index_name,
-            #         dimension=768,
-            #         metric="cosine",
-            #         spec=ServerlessSpec(cloud="aws", region="us-east-1"),
-            #     )
-            #     while not pinecone_client.describe_index(index_name).status["ready"]:
-            #         time.sleep(1)
-
-            # pinecone_index = pinecone_client.Index(index_name)
-            # st.session_state.vectorstore = PineconeVectorStore(index=pinecone_index, embedding=embeddings)
-            # print('created vectorstore')
 
     success = st.success('Database deleted successfully!')
     time.sleep(2)
