@@ -110,6 +110,8 @@ def rag_documents(repo_name: str) -> None:
     loads github documents and uploads them to the pinecone database 
     '''
     github_url = f'https://github.com/reportingandinsights/{repo_name}'
+
+    # personal access token (PAC) is needed query the github API to clone repos 
     github_PAC_url = f'https://{st.secrets["GITHUB_PERSONAL_ACCESS_TOKEN"]}@github.com/reportingandinsights/{repo_name}'
 
     with st.sidebar:
