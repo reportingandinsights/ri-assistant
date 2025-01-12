@@ -62,6 +62,7 @@ Note that while this Github repo and Streamlit app is public, Streamlit app usag
 5) Add or delete user emails as necessary
 
 **Updating Documents**
+
 To update the chatbot on the latest (and greatest) documentation follow these steps:
 1) Upload updated code to the common-code repository or upload Google Drive documentation to the google-drive-docs repository
 2) Open the Streamlit app
@@ -69,6 +70,7 @@ To update the chatbot on the latest (and greatest) documentation follow these st
 As long as the file structure hasn't changed (ie: folders or files have moved), this operation should overwrite the old document in the Pinecone database.
 
 **Deleting Documents**
+
 It might be necessary to delete all documents in the Pinecone database because the file paths might have changed (ie: moving folders and files around). Simply click "Delete Pinecone Database" and the app will delete all documents and recreate an empty database for you.
 
 To double-check that the database has been deleted, go to [Pinecone](https://pinecone.io/) and check the number of documents are in the ri-assistant index.  
