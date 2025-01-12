@@ -165,8 +165,7 @@ def _load_github_files(github_url: str, temp_path: str) -> tuple:
 
             except Exception as e:
                 print(f'error loading {file_path}, error: {e}')
-    return
-    # return (ids, docs)
+    return (ids, docs)
 
 def _build_document(file_path: str, text: str, index: int) -> Document:
     ''' create a Document object with id, metadata, and page content '''
