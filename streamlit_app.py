@@ -95,11 +95,7 @@ def rag_documents(repo_name: str) -> None:
                         ids, docs = _load_github_files(github_url, temp_path)
                         print('upserting docs:', ids)
                         st.session_state.vectorstore.add_documents(documents=docs, ids=ids)
-                        # print('loaded docs')
-                        # ids, docs = documents.items()
-                        # ids, docs = _process_github(repo_name)
-                        # st.session_state.vectorstore.add_documents(documents=docs, ids=ids)
-                        # print('upserting docs:', ids)
+
 
             success = st.success('Documents updated successfully!')
             time.sleep(2)
@@ -154,43 +150,16 @@ def _load_github_files(github_url: str, temp_path: str) -> tuple:
                     # loader.load() returns a list, but this list only has one document because os.walk only gives it one element
                     text = loader.load()[0].page_content
                     for index, t in enumerate(text_splitter.split_text(text)):
-                        built_doc = _build_document(github_url + file + '/', t, index)
+                        built_doc = _build_document(github_url + '/' + file, t, index)
                         file = file.replace(' ', '%20') # replacing spaces with %20 to make the url valid
-                        ids.append(github_url + file + '/')
-                        print(github_url + file + '/')
+                        ids.append(github_url + '/' + file)
+                        print('loading:', github_url + '/' + file)
                         docs.append(built_doc)
 
             except Exception as e:
                 print(f'error loading {file_path}, error: {e}')
     
     return (ids, docs)
-
-def _process_github(repo_name: str) -> tuple:
-    ''' creates Documents for all loaded files and returns a tuple of ids and data '''
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=100)
-
-    ids = []
-    data = []
-
-    loader = GithubFileLoader(
-        repo=f'reportingandinsights/{repo_name}',
-        branch='main',
-        access_token=os.getenv('GITHUB_PERSONAL_ACCESS_TOKEN'),
-        file_filter=lambda file_path: file_path.endswith(('.md', '.txt', '.xml', '.docx', '.doc', '.xlsx'))
-    )
-
-    # github loads all documents as a list, so need to iterate through each document
-    for gitdoc in loader.load():
-        file_path = f"https://github.com/reportingandinsights/{repo_name}/blob/main/{gitdoc.metadata['path'].replaceall(' ', '%20')}"
-        split_text = text_splitter.split_text(gitdoc.page_content)
-
-        for index, text in enumerate(split_text):
-            built_gitdoc = _build_document(file_path, text, index)
-            ids.append(built_gitdoc.id)
-            data.append(built_gitdoc) 
-            print('loading:', file_path)
-
-    return (ids, data)
 
 def _build_document(file_path: str, text: str, index: int) -> Document:
     ''' create a Document object with id, metadata, and page content '''
