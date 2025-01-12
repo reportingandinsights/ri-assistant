@@ -52,12 +52,28 @@ Login through the Streamlit-Github SSO using the reporting and insights email.
 
 Streamlit will automatically update the app when new changes are pushed to this project's Github repository main branch.
 
-Note that while this Github repo and Streamlit app is public, Streamlit app usage is restricted to certain users. To change user access:
+Note that while this Github repo and Streamlit app is public, Streamlit app usage is restricted to certain users. 
+
+**Changing User Access**
 1) Go to the [Streamlit app dashboard](https://share.streamlit.io/)
 2) Click the three vertical dots on the right
 3) Go to Settings > Sharing
 4) Set "Who can view this app" to "Only specific people can view this app"
-5) Add or delete user emails as necessary 
+5) Add or delete user emails as necessary
+
+**Updating Documents**
+To update the chatbot on the latest (and greatest) documentation follow these steps:
+1) Upload updated code to the common-code repository or upload Google Drive documentation to the google-drive-docs repository
+2) Open the Streamlit app
+3) Click the relevant "Update Google Drive Documents" or "Update Common-Code Documents button"
+As long as the file structure hasn't changed (ie: folders or files have moved), this operation should overwrite the old document in the Pinecone database.
+
+**Deleting Documents**
+It might be necessary to delete all documents in the Pinecone database because the file paths might have changed (ie: moving folders and files around). Simply click "Delete Pinecone Database" and the app will delete all documents and recreate an empty database for you.
+
+To double-check that the database has been deleted, go to [Pinecone](https://pinecone.io/) and check the number of documents are in the ri-assistant index.  
+
+Note that you will have to reupload all documents after this operation!
 
 ### 🤖 Groq
 [Groq](https://groq.com/) is a free large language model provider that this chat app uses to understand and respond to the user's questions.
@@ -114,9 +130,10 @@ The [Common Code repo](https://github.com/reportingandinsights/common-code) stor
 
 Login using the reporting and insights email.
 
-The chatbot needs a [Fine-grained access token](https://github.com/settings/personal-access-tokens) to read and clone the Github folders in both repositories. 
-
+**Document Disclaimer**
 Because I was not able to get a Google Drive API token to read the documentation in the Google Drive directly, I had to upload the documents to Github. This allows the chatbot to clone the repository and read all the files to send them to Pinecone. **Note images are not loaded to Pinecone due to extra installations and Excel documents are hard for the chatbot to understand as loaded text does not keep its cell format.**
+
+The chatbot needs a [Fine-grained access token](https://github.com/settings/personal-access-tokens) to read and clone the Github folders in both repositories. 
 
 This token:
 - does not expire (as of 01/09/25)
