@@ -20,7 +20,7 @@ RIA is a Python Streamlit app that uses Groq's llama-3.1-70b-versatile model, Pi
 
 1. Clone the repository
    ```
-   $ git clone https://github.com/Awnder/RI-assist-demov1.git
+   $ git clone https://github.com/Awnder/ri-assistant.git
    ```
 
 2. Install the requirements

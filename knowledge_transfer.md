@@ -34,8 +34,7 @@ This section will walk through how to get the code and install software dependen
 1) 🚀 Deployment: Streamlit
 2) 🤖 AI: Groq
 3) 🗃️ Vector Storage: Pinecone
-4) 📝 Code Storage: Github Common Code Repository
-5) 📝 Document Storage: Google Drive API (in progress)
+4) 📝 Document Storage: Github
 
 Each service except Streamlit requires some sort of key to access the resources.
 
@@ -92,24 +91,27 @@ Pinecone also uses an API key to access the database, with a near identical proc
    PINECONE_API_KEY = "replace-with-token"
    ```
 
-### 📝 Code Storage: Github Common Code Repository
-This [Github repo](https://github.com/reportingandinsights/common-code) stores unorganized code snippets from various reports that are helpful to reuse. The chatbot uses all the files in this repository for its data.
+### 📝 Document Storage: Github
+This [Github repo](https://github.com/reportingandinsights/common-code) stores unorganized code snippets from various reports that are helpful to reuse. The folder documents in this repository stores all of the Google Drive documentation. The chatbot uses all the files in this repository for its data.
 
-The chatbot needs a [Fine-grained access token](https://github.com/settings/personal-access-tokens) to read the Github folders in this repository. 
+Login using the reporting and insights email.
+
+The chatbot needs a [Fine-grained access token](https://github.com/settings/personal-access-tokens) to read and clone the Github folders in both repositories. 
+
+Because I was not able to get a Google Drive API token to read the documentation in the Google Drive directly, I had to upload the documents to Github. This allows the chatbot to clone the repository and read all the files to send them to Pinecone.
 
 This token:
 - does not expire (as of 01/09/25)
-- can only access the common-code repository to read metadata and file contents
+- can only access the ri-assistant and common-code repository to read metadata and file contents
 
 If the lack of expiration is a security concern, you can regenerate the token to add an expiration date using the following steps. Note that if you do you will also need to replace the token.
 
 **Regenerating the Token**
 1) Click on Regenerate Token and choose an expiration date
-2) Under Repository Access, only give access to reportingandinsights/common-code
+2) Under Repository Access, give access to reportingandinsights/common-code and reportingandinsights/ri-assistant
 3) Add Read-only access to Contents (metadata access is automatically enabled)
 4) Save and replace the old token with the new token in two places: the Streamlit website and locally in the `secrets.toml` folder with
 
    ```
    GITHUB_PERSONAL_ACCESS_TOKEN = "replace-with-token"
    ```
-   
