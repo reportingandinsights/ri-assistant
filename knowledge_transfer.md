@@ -27,7 +27,7 @@ This section will walk through how to get the code and install software dependen
 4) Install all dependencies - ensure you're in the same directory as the `requirements.txt` file 
 
    ```
-   $ pip install -r "requirements.txt"
+   $ pip install -r requirements.txt
    ```
 
 3. Run the app locally to debug
@@ -50,7 +50,7 @@ Each service except Streamlit requires some sort of key to access the resources.
 
 Login through the Streamlit-Github SSO using the reporting and insights email.
 
-Streamlit will automatically update the app when new changes are pushed to this project's Github repository.
+Streamlit will automatically update the app when new changes are pushed to this project's Github repository main branch.
 
 ### 🤖 Groq
 [Groq](https://groq.com/) is a free large language model provider that this chat app uses to understand and respond to the user's questions.
@@ -109,7 +109,7 @@ Login using the reporting and insights email.
 
 The chatbot needs a [Fine-grained access token](https://github.com/settings/personal-access-tokens) to read and clone the Github folders in both repositories. 
 
-Because I was not able to get a Google Drive API token to read the documentation in the Google Drive directly, I had to upload the documents to Github. This allows the chatbot to clone the repository and read all the files to send them to Pinecone. **Note images are not loaded to Pinecone due to extra downloads required.**
+Because I was not able to get a Google Drive API token to read the documentation in the Google Drive directly, I had to upload the documents to Github. This allows the chatbot to clone the repository and read all the files to send them to Pinecone. **Note images are not loaded to Pinecone due to extra installations and Excel documents are hard for the chatbot to understand as loaded text does not keep its cell format.**
 
 This token:
 - does not expire (as of 01/09/25)
