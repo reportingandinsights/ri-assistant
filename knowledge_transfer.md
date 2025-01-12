@@ -133,6 +133,7 @@ The [Common Code repo](https://github.com/reportingandinsights/common-code) stor
 Login using the reporting and insights email.
 
 **Document Disclaimer**
+
 Because I was not able to get a Google Drive API token to read the documentation in the Google Drive directly, I had to upload the documents to Github. This allows the chatbot to clone the repository and read all the files to send them to Pinecone. **Note images are not loaded to Pinecone due to extra installations and Excel documents are hard for the chatbot to understand as loaded text does not keep its cell format.**
 
 The chatbot needs a [Fine-grained access token](https://github.com/settings/personal-access-tokens) to read and clone the Github folders in both repositories. 
