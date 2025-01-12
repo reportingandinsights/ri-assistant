@@ -243,6 +243,7 @@ with st.sidebar:
 
     st.subheader('Delete Options')
     st.button('Delete Pinecone Database', on_click=lambda: confirm_delete_database())
+    st.button('Clear Chat History', on_click=lambda: st.session_state.pop('messages', None))
 
 
 ### Confirmation Modals
