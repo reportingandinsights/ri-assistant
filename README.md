@@ -8,7 +8,10 @@
 
 ## How to use RIA?
 
-☁️ Open in Streamlit cloud: [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://ri-assist-demov1.streamlit.app/)
+1) Login to the reportingandinsights Github account or
+2) be one of the special users in Streamlit's User Access List (see [Knowledge Transfer](./knowledge_transfer.md) under Streamlit > Changing User Access)
+
+☁️ Then, open in Streamlit cloud: [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://ri-assist-demov1.streamlit.app/)
 
 ## RIA's Technical Specs
 
