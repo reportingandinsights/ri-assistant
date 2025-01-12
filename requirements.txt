@@ -11,3 +11,5 @@ unstructured_inference
 sentence-transformers
 markdown
 streamlit
+docx2txt
+openpyxl

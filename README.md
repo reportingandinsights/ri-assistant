@@ -8,27 +8,10 @@
 
 ## How to use RIA?
 
-1. ☁️ Open in Streamlit cloud (recommended): [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://ri-assist-demov1.streamlit.app/)
-
-2. 🖥️ Run locally (details in dev section)
+☁️ Open in Streamlit cloud: [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://ri-assist-demov1.streamlit.app/)
 
 ## RIA's Technical Specs
 
 RIA is a Python Streamlit app that uses Groq's llama-3.1-70b-versatile model, Pinecone for vector databasing and storage, langchain for RAG document parsing, and sentence-transformers for query construction.
 
-## Local Development
-
-1. Clone the repository
-   ```
-   $ git clone https://github.com/Awnder/ri-assistant.git
-   ```
-
-2. Install the requirements
-   ```
-   $ pip install -r requirements.txt
-   ```
-
-3. Run the app locally to debug
-   ```
-   $ streamlit run streamlit_app.py
-   ```
+Go to [Knowledge Transfer](./knowledge_transfer.md)

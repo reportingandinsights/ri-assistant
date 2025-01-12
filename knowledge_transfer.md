@@ -10,24 +10,29 @@ This section will walk through how to get the code and install software dependen
 2) Python
 3) Pip
 
-**Installation**
+**Download**
 1) Open Visual Studio Code and open a terminal
 2) Clone the repository by running the below in the terminal
    
-    ```
-    git clone https://github.com/reportingandinsights/ri-assistant
-    ```
+   ```
+   $ git clone https://github.com/reportingandinsights/ri-assistant
+   ```
 
 3) Create a virtual environment to download the dependencies
 
    ```
-   python -m venv /path/to/new/virtual/environment
+   $ python -m venv /path/to/new/virtual/environment
    ```
 
 4) Install all dependencies - ensure you're in the same directory as the `requirements.txt` file 
 
    ```
-   pip install -r "requirements.txt"
+   $ pip install -r "requirements.txt"
+   ```
+
+3. Run the app locally to debug
+   ```
+   $ streamlit run streamlit_app.py
    ```
 
 ## 🍽️ Services
@@ -46,7 +51,9 @@ Login through the Streamlit-Github SSO using the reporting and insights email.
 Streamlit will automatically update the app when new changes are pushed to this project's Github repository.
 
 ### 🤖 Groq
-[Groq](https://groq.com/) is a free large language model provider that this chat app uses to understand and respond to the user's questions. 
+[Groq](https://groq.com/) is a free large language model provider that this chat app uses to understand and respond to the user's questions.
+
+[Privacy](https://groq.com/privacy-policy/): No data given to Groq's LLMs are stored or used to train their models.
 
 Login through the Groq-Github SSO using the reporting and insights email.
 
@@ -82,6 +89,8 @@ R&I is currently on Groq's [Free Tier](https://console.groq.com/settings/billing
 
 Login through the Pinecone-Github SSO using the reporting and insights email.
 
+[Privacy](https://www.pinecone.io/privacy/): Pinecone protects its customer's privacy and does not sell database data. It does collect usage data on how its services are being leveraged.
+
 Pinecone also uses an API key to access the database, with a near identical process to Groq. Remember to copy the key because after you close the window there is no option to access it again.
 1) Click "Create API Key"
 2) Submit a name (you can change the name later) and copy the key
@@ -98,7 +107,7 @@ Login using the reporting and insights email.
 
 The chatbot needs a [Fine-grained access token](https://github.com/settings/personal-access-tokens) to read and clone the Github folders in both repositories. 
 
-Because I was not able to get a Google Drive API token to read the documentation in the Google Drive directly, I had to upload the documents to Github. This allows the chatbot to clone the repository and read all the files to send them to Pinecone.
+Because I was not able to get a Google Drive API token to read the documentation in the Google Drive directly, I had to upload the documents to Github. This allows the chatbot to clone the repository and read all the files to send them to Pinecone. **Note images are not loaded to Pinecone due to extra downloads required.**
 
 This token:
 - does not expire (as of 01/09/25)
