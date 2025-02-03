@@ -1,5 +1,5 @@
 torch
-groq
+google.generativeai
 pinecone-client
 pinecone
 langchain
