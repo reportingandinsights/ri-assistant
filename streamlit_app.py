@@ -29,12 +29,15 @@ import tempfile
 import streamlit as st
 
 # AI model
-import groq
+import google.generativeai as genai
 
 
 ### Initializing Groq ###
 
-groq_client = groq.Groq(api_key=st.secrets["GROQ_API_KEY"])
+# groq_client = groq.Groq(api_key=st.secrets["GROQ_API_KEY"])
+genai.configure(api_key=st.secrets=["GEMINI_API_KEY"])
+gemini_client = GenerativeModel(model_name="gemini-1.5-flash", system_instruction=system_prompt)
+chat_session = gemini_client.start_chat(history=[])
 
 system_prompt = f'''
 You are an expert chatbot specialized in understanding and explaining Power BI concepts, as well as company-specific documentation. Let's think step-by-step:
@@ -75,6 +78,10 @@ def parse_groq_stream(stream: object) -> None:
             st.session_state.messages.append({"role": "assistant", "content": f"Sorry, there's been an error: {e}. Please try again."})
             print(f"Error: {e}")
 
+def parse_gemini_stream(stream: object) -> None:
+    ''' parse gemini content stream to feed streamlit chat write '''
+    for chunk in stream:
+        yield chunk.text
 
 ### Initializing Pinecone ###
 
@@ -263,21 +270,24 @@ if query := st.chat_input('How can I help?'):
         augmented_query = '<CONTEXT>\n\n-------\n' + '\n'.join(contexts[:10]) + '\n-------\n</CONTEXT>\n\nMY QUESTION:\n' + query
 
     # Generate a response.
-    stream = groq_client.chat.completions.create(
-        model="llama-3.1-70b-versatile",
-        messages=[
-            # note that the groq llama model has a 6000 token/minute limit 
-            # this restricts messages larger than 6000 tokens (which is basically 1 1/2 questions)
-            # therefore I have to make do with no conversation history
-            {"role": "assistant", "content": system_prompt},
-            {"role": "user", "content": augmented_query},
-        ],
-        stream=True,
-    )
+    
+    stream = chat_session.send_message(augmented_query, stream=True)
+
+    # stream = groq_client.chat.completions.create(
+    #     model="llama-3.1-70b-versatile",
+    #     messages=[
+    #         # note that the groq llama model has a 6000 token/minute limit 
+    #         # this restricts messages larger than 6000 tokens (which is basically 1 1/2 questions)
+    #         # therefore I have to make do with no conversation history
+    #         {"role": "assistant", "content": system_prompt},
+    #         {"role": "user", "content": augmented_query},
+    #     ],
+    #     stream=True,
+    # )
 
     # Stream the response to the chat using `st.write_stream`, then store it in session
     with st.chat_message('assistant'):
-        response = st.write_stream(parse_groq_stream(stream))
+        response = st.write_stream(parse_gemini_stream(stream))
     st.session_state.messages.append({"role": "assistant", "content": response})
     
 with st.sidebar:
