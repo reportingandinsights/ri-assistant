@@ -35,7 +35,7 @@ import google.generativeai as genai
 ### Initializing Groq ###
 
 # groq_client = groq.Groq(api_key=st.secrets["GROQ_API_KEY"])
-genai.configure(api_key=st.secrets=["GEMINI_API_KEY"])
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 gemini_client = GenerativeModel(model_name="gemini-1.5-flash", system_instruction=system_prompt)
 chat_session = gemini_client.start_chat(history=[])
 
