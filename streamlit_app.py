@@ -34,11 +34,6 @@ import google.generativeai as genai
 
 ### Initializing Groq ###
 
-# groq_client = groq.Groq(api_key=st.secrets["GROQ_API_KEY"])
-genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-gemini_client = GenerativeModel(model_name="gemini-1.5-flash", system_instruction=system_prompt)
-chat_session = gemini_client.start_chat(history=[])
-
 system_prompt = f'''
 You are an expert chatbot specialized in understanding and explaining Power BI concepts, as well as company-specific documentation. Let's think step-by-step:
 
@@ -56,9 +51,9 @@ Provide guidance on how Power BI integrates with company-specific data sources, 
 Answer questions related to company policies on data usage, reporting standards, and any custom Power BI templates or resources the company has created.
 
 When responding:
-Always ensure your explanations are clear, concise, and easy to understand for both beginner and advanced users.
-If the answer involves company-specific processes or documents, refer to the most up-to-date and accurate resources available.
-Cite the file path of documents you used as sources using bullet-points below your response only.
+1) Always ensure your explanations are clear, concise, and easy to understand for both beginner and advanced users.
+2) If the answer involves company-specific processes or documents, refer to the most up-to-date and accurate resources available.
+3) Cite the file source as a github hyperlink url for documents you used as sources using bullet-points below your response ONLY. Do not include citations within the response text.
 
 Example scenarios:
 1) A user asks, “How do I create a DAX measure to calculate year-over-year growth in Power BI?” You should walk them through the DAX formula and explain how it works in the context of their dataset.
@@ -66,6 +61,11 @@ Example scenarios:
 
 Your goal is to make the user feel confident in using Power BI and navigating company documentation, while providing practical and actionable solutions.
 '''
+
+# groq_client = groq.Groq(api_key=st.secrets["GROQ_API_KEY"])
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+gemini_client = genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=system_prompt)
+chat_session = gemini_client.start_chat(history=[])
 
 def parse_groq_stream(stream: object) -> None:
     ''' parse groq content stream to feed to streamlit chat write '''
@@ -81,7 +81,11 @@ def parse_groq_stream(stream: object) -> None:
 def parse_gemini_stream(stream: object) -> None:
     ''' parse gemini content stream to feed streamlit chat write '''
     for chunk in stream:
-        yield chunk.text
+        try: 
+            yield chunk.text
+        except Exception as e:
+            st.session_state.messages.append({"role": "assistant", "content": f"Sorry, there's been an error: {e}. Please try again."})
+            print(f"Error: {e}")
 
 ### Initializing Pinecone ###
 
