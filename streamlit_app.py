@@ -109,10 +109,10 @@ def rag_documents(repo_name: str) -> None:
     repo_name (str): name of the github repo
     loads github documents and uploads them to the pinecone database 
     '''
-    github_url = f'https://github.com/reportingandinsights/{repo_name}'
+    github_url = f'https://github.com/awnder/{repo_name}'
 
     # personal access token (PAC) is needed query the github API to clone repos 
-    github_PAC_url = f'https://{st.secrets["GITHUB_PERSONAL_ACCESS_TOKEN"]}@github.com/reportingandinsights/{repo_name}'
+    github_PAC_url = f'https://{st.secrets["GITHUB_PERSONAL_ACCESS_TOKEN"]}@github.com/awnder/{repo_name}'
 
     with st.sidebar:
         try:
@@ -282,7 +282,7 @@ if query := st.chat_input('How can I help?'):
     
 with st.sidebar:
     st.subheader('Update Document Options')
-    st.button('Update Google Drive Documents', on_click=lambda: rag_documents('google-drive-docs'))
+    st.button('Update Google Drive Documents', on_click=lambda: rag_documents('sbc-temp-docs'))
     st.button('Update Common-Code Documents', on_click=lambda: rag_documents('common-code'))
 
     st.subheader('Delete Options')
