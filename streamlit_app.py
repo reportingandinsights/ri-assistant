@@ -15,8 +15,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.schema import Document
 
 # pinecone and vector storing
-import pinecone
-from pinecone import ServerlessSpec
+from pinecone import Pinecone, ServerlessSpec
 from langchain_pinecone import PineconeVectorStore
 import sentence_transformers
 
@@ -30,8 +29,7 @@ import tempfile
 import streamlit as st
 
 # AI model
-import google.generativeai as genai
-
+import groq
 
 ### Initializing Gemini ###
 
@@ -63,15 +61,15 @@ Example scenarios:
 Your goal is to make the user feel confident in using Power BI and navigating company documentation, while providing practical and actionable solutions.
 '''
 
-genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-gemini_client = genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=system_prompt)
-chat_session = gemini_client.start_chat(history=[])
+groq_client = groq.Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-def parse_gemini_stream(stream: object) -> None:
-    ''' parse gemini content stream to feed streamlit chat write '''
+def parse_groq_stream(stream: object) -> None:
+    ''' parse groq content stream to feed to streamlit chat write '''
     for chunk in stream:
-        try: 
-            yield chunk.text
+        try:
+            if chunk.choices:
+                if chunk.choices[0].delta.content is not None:
+                    yield chunk.choices[0].delta.content
         except Exception as e:
             st.session_state.messages.append({"role": "assistant", "content": f"Sorry, there's been an error: {e}. Please try again."})
             print(f"Error: {e}")
@@ -80,7 +78,7 @@ def parse_gemini_stream(stream: object) -> None:
 
 # this embedding generates a 768-dimension vector describing the semantic meaning of the text
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
-pinecone_client = pinecone.Pinecone(api_key=st.secrets["PINECONE_API_KEY"])
+pinecone_client = Pinecone(api_key=st.secrets["PINECONE_API_KEY"])
 
 index_name = "ri-assistant"
 pinecone_namespace = ""
@@ -263,11 +261,22 @@ if query := st.chat_input('How can I help?'):
         augmented_query = '<CONTEXT>\n\n-------\n' + '\n'.join(contexts[:10]) + '\n-------\n</CONTEXT>\n\nMY QUESTION:\n' + query
 
     # Generate a response.
-    stream = chat_session.send_message(augmented_query, stream=True)
+    
+    stream = groq_client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            # note that the groq llama model has a 6000 token/minute limit 
+            # this restricts messages larger than 6000 tokens (which is basically 1 1/2 questions)
+            # therefore I have to make do with no conversation history
+            {"role": "assistant", "content": system_prompt},
+            {"role": "user", "content": augmented_query},
+        ],
+        stream=True,
+    )
 
     # Stream the response to the chat using `st.write_stream`, then store it in session
     with st.chat_message('assistant'):
-        response = st.write_stream(parse_gemini_stream(stream))
+        response = st.write_stream(parse_groq_stream(stream))
     st.session_state.messages.append({"role": "assistant", "content": response})
     
 with st.sidebar:
