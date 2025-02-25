@@ -15,8 +15,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.schema import Document
 
 # pinecone and vector storing
-import pinecone
-from pinecone import ServerlessSpec
+from pinecone import Pinecone, ServerlessSpec
 from langchain_pinecone import PineconeVectorStore
 import sentence_transformers
 
@@ -79,7 +78,7 @@ def parse_groq_stream(stream: object) -> None:
 
 # this embedding generates a 768-dimension vector describing the semantic meaning of the text
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
-pinecone_client = pinecone.Pinecone(api_key=st.secrets["PINECONE_API_KEY"])
+pinecone_client = Pinecone(api_key=st.secrets["PINECONE_API_KEY"])
 
 index_name = "ri-assistant"
 pinecone_namespace = ""
