@@ -29,12 +29,10 @@ import tempfile
 import streamlit as st
 
 # AI model
-import groq
+import google.generativeai as genai
 
 
 ### Initializing Groq ###
-
-groq_client = groq.Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 system_prompt = f'''
 You are an expert chatbot specialized in understanding and explaining Power BI concepts, as well as company-specific documentation. Let's think step-by-step:
@@ -53,9 +51,9 @@ Provide guidance on how Power BI integrates with company-specific data sources, 
 Answer questions related to company policies on data usage, reporting standards, and any custom Power BI templates or resources the company has created.
 
 When responding:
-Always ensure your explanations are clear, concise, and easy to understand for both beginner and advanced users.
-If the answer involves company-specific processes or documents, refer to the most up-to-date and accurate resources available.
-Cite the file path of documents you used as sources using bullet-points below your response only.
+1) Always ensure your explanations are clear, concise, and easy to understand for both beginner and advanced users.
+2) If the answer involves company-specific processes or documents, refer to the most up-to-date and accurate resources available.
+3) Cite the file source as a github hyperlink url for documents you used as sources using bullet-points below your response ONLY. Do not include citations within the response text.
 
 Example scenarios:
 1) A user asks, “How do I create a DAX measure to calculate year-over-year growth in Power BI?” You should walk them through the DAX formula and explain how it works in the context of their dataset.
@@ -63,6 +61,11 @@ Example scenarios:
 
 Your goal is to make the user feel confident in using Power BI and navigating company documentation, while providing practical and actionable solutions.
 '''
+
+# groq_client = groq.Groq(api_key=st.secrets["GROQ_API_KEY"])
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+gemini_client = genai.GenerativeModel(model_name="gemini-1.5-flash", system_instruction=system_prompt)
+chat_session = gemini_client.start_chat(history=[])
 
 def parse_groq_stream(stream: object) -> None:
     ''' parse groq content stream to feed to streamlit chat write '''
@@ -75,6 +78,14 @@ def parse_groq_stream(stream: object) -> None:
             st.session_state.messages.append({"role": "assistant", "content": f"Sorry, there's been an error: {e}. Please try again."})
             print(f"Error: {e}")
 
+def parse_gemini_stream(stream: object) -> None:
+    ''' parse gemini content stream to feed streamlit chat write '''
+    for chunk in stream:
+        try: 
+            yield chunk.text
+        except Exception as e:
+            st.session_state.messages.append({"role": "assistant", "content": f"Sorry, there's been an error: {e}. Please try again."})
+            print(f"Error: {e}")
 
 ### Initializing Pinecone ###
 
@@ -109,10 +120,10 @@ def rag_documents(repo_name: str) -> None:
     repo_name (str): name of the github repo
     loads github documents and uploads them to the pinecone database 
     '''
-    github_url = f'https://github.com/reportingandinsights/{repo_name}'
+    github_url = f'https://github.com/awnder/{repo_name}'
 
     # personal access token (PAC) is needed query the github API to clone repos 
-    github_PAC_url = f'https://{st.secrets["GITHUB_PERSONAL_ACCESS_TOKEN"]}@github.com/reportingandinsights/{repo_name}'
+    github_PAC_url = f'https://{st.secrets["GITHUB_PERSONAL_ACCESS_TOKEN"]}@github.com/awnder/{repo_name}'
 
     with st.sidebar:
         try:
@@ -263,26 +274,29 @@ if query := st.chat_input('How can I help?'):
         augmented_query = '<CONTEXT>\n\n-------\n' + '\n'.join(contexts[:10]) + '\n-------\n</CONTEXT>\n\nMY QUESTION:\n' + query
 
     # Generate a response.
-    stream = groq_client.chat.completions.create(
-        model="llama-3.1-70b-versatile",
-        messages=[
-            # note that the groq llama model has a 6000 token/minute limit 
-            # this restricts messages larger than 6000 tokens (which is basically 1 1/2 questions)
-            # therefore I have to make do with no conversation history
-            {"role": "assistant", "content": system_prompt},
-            {"role": "user", "content": augmented_query},
-        ],
-        stream=True,
-    )
+    
+    stream = chat_session.send_message(augmented_query, stream=True)
+
+    # stream = groq_client.chat.completions.create(
+    #     model="llama-3.1-70b-versatile",
+    #     messages=[
+    #         # note that the groq llama model has a 6000 token/minute limit 
+    #         # this restricts messages larger than 6000 tokens (which is basically 1 1/2 questions)
+    #         # therefore I have to make do with no conversation history
+    #         {"role": "assistant", "content": system_prompt},
+    #         {"role": "user", "content": augmented_query},
+    #     ],
+    #     stream=True,
+    # )
 
     # Stream the response to the chat using `st.write_stream`, then store it in session
     with st.chat_message('assistant'):
-        response = st.write_stream(parse_groq_stream(stream))
+        response = st.write_stream(parse_gemini_stream(stream))
     st.session_state.messages.append({"role": "assistant", "content": response})
     
 with st.sidebar:
     st.subheader('Update Document Options')
-    st.button('Update Google Drive Documents', on_click=lambda: rag_documents('google-drive-docs'))
+    st.button('Update Google Drive Documents', on_click=lambda: rag_documents('sbc-temp-docs'))
     st.button('Update Common-Code Documents', on_click=lambda: rag_documents('common-code'))
 
     st.subheader('Delete Options')
