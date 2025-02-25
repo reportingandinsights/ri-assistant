@@ -1,6 +1,6 @@
 ### R&I Assistant Chatbot ###
 # created by Andrew Shiroma to accelerate intern and volunteer onboarding
-# uses Langchain and Pinecone to vectorize documents and uses Groq's Llama model to generate responses to user questions 
+# uses Langchain and Pinecone to vectorize documents and uses Gemini model to generate responses to user questions 
 
 
 ### Imports ###
@@ -31,7 +31,7 @@ import streamlit as st
 # AI model
 import groq
 
-### Initializing Groq ###
+### Initializing Gemini ###
 
 system_prompt = f'''
 You are an expert chatbot specialized in understanding and explaining Power BI concepts, as well as company-specific documentation. Let's think step-by-step:
