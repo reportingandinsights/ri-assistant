@@ -39,7 +39,7 @@ Additionally, the "Manage app" sidebar on the right side of the cloud deployment
 
 ## 🍽️ Services
 1) 🚀 Deployment: Streamlit
-2) 🤖 AI: Gemini
+2) 🤖 AI: Groq
 3) 🗃️ Vector Storage: Pinecone
 4) 📝 Document Storage: Github
 
@@ -78,11 +78,13 @@ To double-check that the database has been deleted, go to [Pinecone](https://pin
 Note that you will have to reupload all documents after this operation!
 
 ### 🤖 Groq
-[Gemini](https://aistudio.google.com/app/apikey/) is a free large language model provider that this chat app uses to understand and respond to the user's questions.
+[Groq](https://groq.com/) is a free large language model provider that this chat app uses to understand and respond to the user's questions.
 
-Login using the reporting and insights email.
+[Privacy](https://groq.com/privacy-policy/): No data given to Groq's LLMs are stored or used to train their models.
 
-The chat app uses a free (get it using the link above) named ri-assistant to access the model. This API key is secure and cannot be accessed after creation. To create a new key and make the chatbot use the new key:
+Login through the Groq-Github SSO using the reporting and insights email.
+
+The chat app uses a free [API key](https://console.groq.com/keys) named ri-assistant to access the model. This API key is secure and cannot be accessed after creation. To create a new key and make the chatbot use the new key:
 1) Click "Create API Key"
 2) Submit a name (you can change the name later) and copy the key
 3) Replace the old key with the new key in two places: Streamlit and locally in the file folders
@@ -93,7 +95,7 @@ The chat app uses a free (get it using the link above) named ri-assistant to acc
 3) Go to Secrets and enter the new API key on a new line in the following format, keeping the quotes around the key:
 
    ```
-   GEMINI_API_KEY = "replace-with-token"
+   GROQ_API_KEY = "replace-with-token"
    ```
 
 **Locally**
@@ -102,14 +104,12 @@ The chat app uses a free (get it using the link above) named ri-assistant to acc
 3) Enter the new API key in `secrets.toml` on a new line using the following format, keeping the quotes around the key:
 
    ```
-   GEMINI_API_KEY = "replace-with-token"
+   GROQ_API_KEY = "replace-with-token"
    ```
    
-You can go to [this page](https://ai.google.dev/gemini-api/docs/rate-limits) to see metrics on request frequency. 
+You can go to [this page](https://console.groq.com/metrics) to see metrics on request frequency. 
 
-R&I is currently using Gemini Flash 1.5 which is free with a rate-limit of 15 requests-per-minute, 1 million tokens-per-minute, and 1,500 requests-per-day.
-
-Artificial intelligence is still rapidly developing and sdks may change without notice.
+R&I is currently on Groq's [Free Tier](https://console.groq.com/settings/billing). This means there are built-in [request limits](https://console.groq.com/settings/limits) (as of 1/7/2025) so you do not need to worry about going over and paying money.
 
 ### 🗃️ Pinecone
 [Pinecone](https://www.pinecone.io/) is a vector database that stores math vectors representing document texts. The Groq AI requests these vectors and uses the information to inform its answers.
